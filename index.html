@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuickPRD</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-row">
+        <h1>QuickPRD</h1>
+        <button id="history-btn" class="icon-btn" title="历史记录">📋</button>
+        <button id="settings-btn" class="icon-btn" title="设置 API Key">⚙️</button>
+      </div>
+      <p class="subtitle">从一句模糊需求到可评审的 PRD，全流程 AI 自动化</p>
+    </header>
+
+    <main>
+      <section class="input-section">
+        <label for="requirement">请描述你的需求：</label>
+        <div class="examples">
+          <span class="examples-label">试试示例：</span>
+          <button type="button" class="example-btn" data-example="新人弹窗送券">新人弹窗送券</button>
+          <button type="button" class="example-btn" data-example="订单取消流程">订单取消流程</button>
+          <button type="button" class="example-btn" data-example="会员签到奖励">会员签到奖励</button>
+        </div>
+        <textarea
+          id="requirement"
+          placeholder="例如：我想做一个电商网站，用户可以买东西……&#10;&#10;按 Ctrl+Enter 快速提交"
+          rows="6"
+        ></textarea>
+        <button id="generate-btn">生成澄清问题</button>
+      </section>
+
+      <section id="output-section" class="output-section hidden">
+        <div class="output-header">
+          <h2>需要进一步澄清的问题</h2>
+          <div class="output-actions">
+            <button id="export-btn" class="action-btn hidden">导出文档</button>
+            <button id="copy-btn" class="action-btn">复制结果</button>
+          </div>
+        </div>
+        <div id="loading" class="loading hidden">
+          <div class="spinner"></div>
+          <p>AI 正在分析需求，请稍候…</p>
+        </div>
+        <div id="output"></div>
+        <button id="generate-prd-btn" class="prd-btn hidden">生成 PRD 文档</button>
+        <button id="back-to-final-prd-btn" class="prd-btn hidden">查看最终 PRD 文档</button>
+      </section>
+
+      <section id="prd-section" class="prd-section hidden">
+        <div class="output-header">
+          <h2>PRD 文档预览</h2>
+          <div class="output-actions">
+            <button id="prd-back-btn" class="action-btn">返回问题清单</button>
+            <button id="prd-export-btn" class="action-btn">导出 Markdown</button>
+            <button id="prd-copy-btn" class="action-btn">复制</button>
+            <button id="prd-review-btn" class="action-btn action-btn-warning">风险评审</button>
+          </div>
+        </div>
+        <div id="prd-loading" class="loading hidden">
+          <div class="spinner"></div>
+          <p>AI 正在生成 PRD 文档，请稍候…</p>
+        </div>
+        <div id="prd-content" class="prd-content"></div>
+
+        <div id="review-section" class="review-section hidden">
+          <hr class="review-divider">
+          <div class="output-header">
+            <h2>技术 / 风控评审</h2>
+            <div class="output-actions">
+              <button id="review-export-btn" class="action-btn">导出评审报告</button>
+              <button id="review-copy-btn" class="action-btn">复制评审结果</button>
+            </div>
+          </div>
+          <div id="review-content" class="review-content"></div>
+          <div id="review-questions-section" class="review-questions-section hidden">
+            <h3>需要您确认的问题</h3>
+            <p class="review-questions-hint">以下问题需要您的决策，AI 才能给出合理的 MVP 方案。可留空跳过，AI 将按最简方案处理。</p>
+            <div id="review-questions-list"></div>
+          </div>
+          <button id="generate-final-prd-btn" class="final-prd-btn">按照修改建议进行补充并生成最终 PRD</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- 历史记录弹窗 -->
+  <div id="history-modal" class="modal-overlay hidden">
+    <div class="modal modal-lg">
+      <div class="modal-header-row">
+        <h3>历史记录</h3>
+        <button id="history-clear-btn" class="btn-text-danger">清空</button>
+      </div>
+      <div id="history-list" class="history-list">
+        <p class="history-empty">暂无历史记录</p>
+      </div>
+      <div class="modal-actions">
+        <button id="history-close-btn" class="btn-secondary">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 设置弹窗 -->
+  <div id="settings-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <h3>API 设置</h3>
+      <label for="provider-select">API 提供商</label>
+      <select id="provider-select">
+        <option value="deepseek">DeepSeek（直连）</option>
+        <option value="openrouter">OpenRouter</option>
+      </select>
+      <label for="api-key-input">API Key</label>
+      <input type="password" id="api-key-input" placeholder="sk-..." />
+      <p class="modal-hint">
+        API Key 仅保存在本地浏览器，不会上传到任何服务器。
+        <a id="provider-link" href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener">获取 API Key →</a>
+      </p>
+      <div class="modal-actions">
+        <button id="cancel-key-btn" class="btn-secondary">取消</button>
+        <button id="save-key-btn">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="api.js"></script>
+  <script src="export.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
