@@ -113,6 +113,8 @@
         <option value="deepseek">DeepSeek（直连）</option>
         <option value="openrouter">OpenRouter</option>
       </select>
+      <label for="prompt-version-select">Prompt 版本</label>
+      <select id="prompt-version-select"></select>
       <label for="api-key-input">API Key</label>
       <input type="password" id="api-key-input" placeholder="sk-..." />
       <p class="modal-hint">
@@ -126,6 +128,7 @@
     </div>
   </div>
 
+  <script src="prompts.js"></script>
   <script src="api.js"></script>
   <script src="export.js"></script>
   <script src="script.js"></script>

@@ -87,15 +87,36 @@ function renderMarkdownToHTML(md) {
   const html = [];
   let inOl = false;
   let inUl = false;
+  let inBlockquote = false;
+  let inCodeBlock = false;
+  let codeBlockContent = [];
 
   function closeLists() {
     if (inOl) { html.push("</ol>"); inOl = false; }
     if (inUl) { html.push("</ul>"); inUl = false; }
   }
 
+  function closeBlockquote() {
+    if (inBlockquote) { html.push("</blockquote>"); inBlockquote = false; }
+  }
+
+  function closeAll() {
+    closeLists();
+    closeBlockquote();
+  }
+
+  function escapeHTML(str) {
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
   function inline(text) {
-    return text
+    return escapeHTML(text)
       .replace(/\*\*\[待确认\]\*\*/g, '<span class="prd-pending">[待确认]</span>')
+      .replace(/`([^`]+?)`/g, "<code>$1</code>")
       .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
       .replace(/\*(.+?)\*/g, "<em>$1</em>");
   }
@@ -103,46 +124,75 @@ function renderMarkdownToHTML(md) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
+    // 代码块
+    if (/^```/.test(line.trim())) {
+      if (inCodeBlock) {
+        html.push(`<pre><code>${escapeHTML(codeBlockContent.join("\n"))}</code></pre>`);
+        codeBlockContent = [];
+        inCodeBlock = false;
+      } else {
+        closeAll();
+        inCodeBlock = true;
+      }
+      continue;
+    }
+    if (inCodeBlock) {
+      codeBlockContent.push(line);
+      continue;
+    }
+
     // 标题
     if (line.startsWith("#### ")) {
-      closeLists();
+      closeAll();
       html.push(`<h4>${inline(line.slice(5))}</h4>`);
     } else if (line.startsWith("### ")) {
-      closeLists();
+      closeAll();
       html.push(`<h3>${inline(line.slice(4))}</h3>`);
     } else if (line.startsWith("## ")) {
-      closeLists();
+      closeAll();
       html.push(`<h2>${inline(line.slice(3))}</h2>`);
     } else if (line.startsWith("# ")) {
-      closeLists();
+      closeAll();
       html.push(`<h1>${inline(line.slice(2))}</h1>`);
     }
     // 分隔线
     else if (/^---+$/.test(line.trim())) {
-      closeLists();
+      closeAll();
       html.push("<hr>");
+    }
+    // 引用块
+    else if (/^>\s?/.test(line)) {
+      closeLists();
+      if (!inBlockquote) { html.push("<blockquote>"); inBlockquote = true; }
+      html.push(`<p>${inline(line.replace(/^>\s?/, ""))}</p>`);
     }
     // 有序列表
     else if (/^\d+\.\s/.test(line)) {
+      closeBlockquote();
       if (!inOl) { closeLists(); html.push("<ol>"); inOl = true; }
       html.push(`<li>${inline(line.replace(/^\d+\.\s/, ""))}</li>`);
     }
     // 无序列表
     else if (/^[-*]\s/.test(line)) {
+      closeBlockquote();
       if (!inUl) { closeLists(); html.push("<ul>"); inUl = true; }
       html.push(`<li>${inline(line.replace(/^[-*]\s/, ""))}</li>`);
     }
     // 空行
     else if (line.trim() === "") {
-      closeLists();
+      closeAll();
     }
     // 普通段落
     else {
-      closeLists();
+      closeAll();
       html.push(`<p>${inline(line)}</p>`);
     }
   }
-  closeLists();
+  // 处理未关闭的代码块
+  if (inCodeBlock) {
+    html.push(`<pre><code>${escapeHTML(codeBlockContent.join("\n"))}</code></pre>`);
+  }
+  closeAll();
   return html.join("\n");
 }
 

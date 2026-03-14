@@ -15,6 +15,7 @@ const saveKeyBtn = document.getElementById("save-key-btn");
 const cancelKeyBtn = document.getElementById("cancel-key-btn");
 const providerSelect = document.getElementById("provider-select");
 const providerLink = document.getElementById("provider-link");
+const promptVersionSelect = document.getElementById("prompt-version-select");
 
 // PRD 相关
 const generatePrdBtn = document.getElementById("generate-prd-btn");
@@ -76,6 +77,7 @@ let lastPrdMarkdown = "";
 let lastReviewMarkdown = "";
 let lastQAList = [];
 let isFinalPrd = false;
+let isGenerating = false;
 
 // ========== 答案持久化 ==========
 
@@ -87,11 +89,11 @@ function saveAnswers() {
       answers[el.id] = el.value;
     }
   });
-  localStorage.setItem("rc_answers", JSON.stringify(answers));
+  localStorage.setItem(STORAGE_KEYS.ANSWERS, JSON.stringify(answers));
 }
 
 function restoreAnswers() {
-  const saved = localStorage.getItem("rc_answers");
+  const saved = localStorage.getItem(STORAGE_KEYS.ANSWERS);
   if (!saved) return;
   try {
     const answers = JSON.parse(saved);
@@ -186,7 +188,12 @@ function showError(error, container) {
   } else if (error.message) {
     msg = error.message;
   }
-  (container || output).innerHTML = `<div class="error-msg">${msg}</div>`;
+  const div = document.createElement("div");
+  div.className = "error-msg";
+  div.textContent = msg;
+  const target = container || output;
+  target.innerHTML = "";
+  target.appendChild(div);
 }
 
 // ========== 收集问答对 ==========
@@ -289,6 +296,14 @@ function openSettings() {
   providerSelect.value = getProvider();
   apiKeyInput.value = getApiKey();
   updateProviderUI();
+
+  // 动态渲染 Prompt 版本选项
+  const versions = getPromptVersionList();
+  const currentVersion = getPromptVersion();
+  promptVersionSelect.innerHTML = versions
+    .map((v) => `<option value="${v}"${v === currentVersion ? " selected" : ""}>${v}</option>`)
+    .join("");
+
   settingsModal.classList.remove("hidden");
   apiKeyInput.focus();
 }
@@ -303,6 +318,9 @@ cancelKeyBtn.addEventListener("click", closeSettings);
 saveKeyBtn.addEventListener("click", () => {
   setProvider(providerSelect.value);
   setApiKey(apiKeyInput.value);
+  const selectedVersion = promptVersionSelect.value;
+  setPromptVersion(selectedVersion);
+  applyPromptVersion(selectedVersion);
   closeSettings();
 });
 
@@ -332,12 +350,18 @@ textarea.addEventListener("keydown", (e) => {
 // ========== 生成澄清问题 ==========
 
 generateBtn.addEventListener("click", async () => {
+  if (isGenerating) return;
   const text = textarea.value.trim();
 
   if (!text) {
     outputSection.classList.remove("hidden");
     output.innerHTML = '<p class="toast">请先输入需求描述</p>';
     return;
+  }
+
+  const MAX_INPUT_LENGTH = 5000;
+  if (text.length > MAX_INPUT_LENGTH) {
+    if (!confirm(`输入内容较长（${text.length} 字），可能影响 AI 分析效果。是否继续？`)) return;
   }
 
   try {
@@ -352,6 +376,7 @@ generateBtn.addEventListener("click", async () => {
     isFinalPrd = false;
     backToFinalPrdBtn.classList.add("hidden");
     showLoading();
+    isGenerating = true;
 
     const loadingText = loading.querySelector("p");
     const rawJson = await analyzeWithAI(text, (charCount) => {
@@ -364,15 +389,16 @@ generateBtn.addEventListener("click", async () => {
 
     render(grouped);
 
-    localStorage.setItem("rc_input", text);
-    localStorage.setItem("rc_result", JSON.stringify(grouped));
-    localStorage.removeItem("rc_answers");
+    localStorage.setItem(STORAGE_KEYS.INPUT, text);
+    localStorage.setItem(STORAGE_KEYS.RESULT, JSON.stringify(grouped));
+    localStorage.removeItem(STORAGE_KEYS.ANSWERS);
     saveToHistory(text, grouped);
   } catch (error) {
     console.error("Analysis failed:", error);
     outputSection.classList.remove("hidden");
     showError(error);
   } finally {
+    isGenerating = false;
     hideLoading();
   }
 });
@@ -380,6 +406,7 @@ generateBtn.addEventListener("click", async () => {
 // ========== 生成 PRD ==========
 
 generatePrdBtn.addEventListener("click", async () => {
+  if (isGenerating) return;
   try {
     if (!getApiKey()) {
       openSettings();
@@ -387,6 +414,10 @@ generatePrdBtn.addEventListener("click", async () => {
     }
 
     const qaList = collectQAList();
+    const hasAnyAnswer = qaList.some((qa) => qa.answer);
+    if (!hasAnyAnswer) {
+      if (!confirm("您尚未回答任何澄清问题，生成的 PRD 可能不够完整。是否继续？")) return;
+    }
     lastQAList = qaList;
 
     // 清空评审状态，恢复标题
@@ -403,6 +434,7 @@ generatePrdBtn.addEventListener("click", async () => {
     prdLoading.classList.remove("hidden");
     generatePrdBtn.disabled = true;
     generatePrdBtn.textContent = "生成中…";
+    isGenerating = true;
 
     // 流式渲染：每收到新内容就更新预览
     prdLoading.classList.add("hidden");
@@ -417,6 +449,7 @@ generatePrdBtn.addEventListener("click", async () => {
     console.error("PRD generation failed:", error);
     showError(error, prdContent);
   } finally {
+    isGenerating = false;
     prdLoading.classList.add("hidden");
     generatePrdBtn.disabled = false;
     generatePrdBtn.textContent = "生成 PRD 文档";
@@ -459,6 +492,7 @@ prdCopyBtn.addEventListener("click", () => {
 // ========== 风险评审 ==========
 
 prdReviewBtn.addEventListener("click", async () => {
+  if (isGenerating) return;
   try {
     if (!getApiKey()) {
       openSettings();
@@ -473,6 +507,7 @@ prdReviewBtn.addEventListener("click", async () => {
     reviewQuestionsSection.classList.add("hidden");
     prdReviewBtn.disabled = true;
     prdReviewBtn.textContent = "评审中…";
+    isGenerating = true;
 
     const markdown = await reviewPRDWithAI(
       lastInput,
@@ -498,6 +533,7 @@ prdReviewBtn.addEventListener("click", async () => {
     console.error("Review failed:", error);
     showError(error, reviewContent);
   } finally {
+    isGenerating = false;
     prdReviewBtn.disabled = false;
     prdReviewBtn.textContent = "风险评审";
   }
@@ -521,6 +557,7 @@ reviewExportBtn.addEventListener("click", () => {
 });
 
 generateFinalPrdBtn.addEventListener("click", async () => {
+  if (isGenerating) return;
   try {
     if (!getApiKey()) {
       openSettings();
@@ -537,6 +574,7 @@ generateFinalPrdBtn.addEventListener("click", async () => {
     prdContent.innerHTML = "";
     generateFinalPrdBtn.disabled = true;
     generateFinalPrdBtn.textContent = "生成中…";
+    isGenerating = true;
 
     // 更新标题标识
     const prdTitle = prdSection.querySelector(".output-header h2");
@@ -567,6 +605,7 @@ generateFinalPrdBtn.addEventListener("click", async () => {
     console.error("Final PRD generation failed:", error);
     showError(error, prdContent);
   } finally {
+    isGenerating = false;
     generateFinalPrdBtn.disabled = false;
     generateFinalPrdBtn.textContent = "按照修改建议进行补充并生成最终 PRD";
   }
@@ -609,12 +648,11 @@ exportBtn.addEventListener("click", () => {
 
 // ========== 历史记录 ==========
 
-const HISTORY_KEY = "rc_history";
 const MAX_HISTORY = 20;
 
 function getHistory() {
   try {
-    return JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
+    return JSON.parse(localStorage.getItem(STORAGE_KEYS.HISTORY)) || [];
   } catch (_) {
     return [];
   }
@@ -634,7 +672,7 @@ function saveToHistory(inputText, result) {
 
   // 限制数量
   if (history.length > MAX_HISTORY) history.length = MAX_HISTORY;
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
 }
 
 function renderHistory() {
@@ -674,9 +712,9 @@ function loadHistoryItem(index) {
   lastInput = item.input;
   lastResult = item.result;
 
-  localStorage.setItem("rc_input", item.input);
-  localStorage.setItem("rc_result", JSON.stringify(item.result));
-  localStorage.removeItem("rc_answers");
+  localStorage.setItem(STORAGE_KEYS.INPUT, item.input);
+  localStorage.setItem(STORAGE_KEYS.RESULT, JSON.stringify(item.result));
+  localStorage.removeItem(STORAGE_KEYS.ANSWERS);
 
   prdSection.classList.add("hidden");
   outputSection.classList.remove("hidden");
@@ -705,7 +743,7 @@ historyList.addEventListener("click", (e) => {
     const idx = parseInt(deleteBtn.dataset.delete, 10);
     const history = getHistory();
     history.splice(idx, 1);
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
     renderHistory();
     return;
   }
@@ -717,15 +755,16 @@ historyList.addEventListener("click", (e) => {
 });
 
 historyClearBtn.addEventListener("click", () => {
-  localStorage.removeItem(HISTORY_KEY);
+  if (!confirm("确定要清空所有历史记录吗？此操作不可恢复。")) return;
+  localStorage.removeItem(STORAGE_KEYS.HISTORY);
   renderHistory();
 });
 
 // ========== 页面加载恢复 ==========
 
 (function restore() {
-  const savedInput = localStorage.getItem("rc_input");
-  const savedResult = localStorage.getItem("rc_result");
+  const savedInput = localStorage.getItem(STORAGE_KEYS.INPUT);
+  const savedResult = localStorage.getItem(STORAGE_KEYS.RESULT);
   if (!savedInput || !savedResult) return;
 
   textarea.value = savedInput;

@@ -4,3 +4,5 @@ node_modules/
 Thumbs.db
 *.log
 nul
+.claude/
+CLAUDE.md
