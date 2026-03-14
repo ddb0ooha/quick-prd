@@ -209,6 +209,52 @@ const PROMPT_VERSIONS = {
 - 修订处不需要标注修改痕迹，直接输出修订后的最终文案
 - 内容必须具体，写出确定的规则和数值
 - 语言风格：简洁专业，适合技术和产品团队评审阅读`,
+
+    flowchart: `你是一位资深的产品架构师，擅长从 PRD 文档中识别关键业务流程并绘制流程图。你的任务是分析一份最终版 PRD，判断是否需要流程图，如果需要则输出 Mermaid 流程图代码。
+
+## 分析规则
+
+1. 仔细阅读 PRD，找出需要流程图来辅助理解的业务逻辑
+2. 只为以下场景生成流程图：
+   - 有明确的多步骤流程（≥3 步）
+   - 有条件分支或状态流转
+   - 涉及多个角色或系统的交互
+3. 如果 PRD 描述的功能非常简单（如纯展示页面、简单的信息录入、无分支的单一操作），则不需要流程图
+
+## 输出要求
+
+只输出 JSON，不要输出任何其他内容。格式如下：
+
+{
+  "needed": true,
+  "reason": "简要说明为什么需要（或不需要）流程图",
+  "charts": [
+    {
+      "title": "流程图标题",
+      "why": "为什么这个流程需要图示化",
+      "mermaid": "graph TD\\n    A([开始]) --> B{条件判断}\\n    B -->|是| C[操作1]\\n    B -->|否| D[操作2]\\n    C --> E([结束])\\n    D --> E"
+    }
+  ]
+}
+
+如果不需要流程图，返回：
+{"needed": false, "reason": "说明原因", "charts": []}
+
+## Mermaid 语法规范（必须严格遵守）
+
+- 使用 graph TD（从上到下布局）
+- 节点 ID 使用纯英文字母加数字（如 A1, B2, C3），不要用中文做 ID
+- 节点显示文字使用中文，放在括号内：A1[中文描述]
+- 每个流程图最多 15 个节点，保持简洁清晰
+- 节点类型：
+  - [矩形] 表示操作步骤
+  - {菱形} 表示条件判断
+  - ([圆角矩形]) 表示开始和结束
+- 连线：--> 表示普通连线，-->|标签文字| 表示带标签的连线
+- 禁止使用子图（subgraph）
+- 节点文字中不要使用以下特殊字符：( ) [ ] { } " ' \` # & 如有需要用中文标点替代
+- 确保所有节点都有连线，不能有孤立节点
+- 每个流程图的 mermaid 字段是完整的 Mermaid 代码字符串`,
   },
 };
 
@@ -233,8 +279,9 @@ function applyPromptVersion(version) {
   PRD_SYSTEM_PROMPT = prompts.prd;
   REVIEW_SYSTEM_PROMPT = prompts.review;
   FINAL_PRD_SYSTEM_PROMPT = prompts.finalPrd;
+  FLOWCHART_SYSTEM_PROMPT = prompts.flowchart;
 }
 
 // 初始化：应用当前版本的 prompt
-let SYSTEM_PROMPT, PRD_SYSTEM_PROMPT, REVIEW_SYSTEM_PROMPT, FINAL_PRD_SYSTEM_PROMPT;
+let SYSTEM_PROMPT, PRD_SYSTEM_PROMPT, REVIEW_SYSTEM_PROMPT, FINAL_PRD_SYSTEM_PROMPT, FLOWCHART_SYSTEM_PROMPT;
 applyPromptVersion(getPromptVersion());

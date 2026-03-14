@@ -66,6 +66,7 @@
           <p>AI 正在生成 PRD 文档，请稍候…</p>
         </div>
         <div id="prd-content" class="prd-content"></div>
+        <button id="generate-flowchart-btn" class="flowchart-btn hidden">生成业务流程图</button>
 
         <div id="review-section" class="review-section hidden">
           <hr class="review-divider">
@@ -83,6 +84,21 @@
             <div id="review-questions-list"></div>
           </div>
           <button id="generate-final-prd-btn" class="final-prd-btn">按照修改建议进行补充并生成最终 PRD</button>
+        </div>
+
+        <div id="flowchart-section" class="flowchart-section hidden">
+          <hr class="flowchart-divider">
+          <div class="output-header">
+            <h2>业务流程图</h2>
+            <div class="output-actions">
+              <button id="flowchart-copy-btn" class="action-btn">复制 Mermaid 源码</button>
+            </div>
+          </div>
+          <div id="flowchart-loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>AI 正在分析流程并生成流程图…</p>
+          </div>
+          <div id="flowchart-content" class="flowchart-content"></div>
         </div>
       </section>
     </main>
@@ -128,6 +144,7 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
   <script src="prompts.js"></script>
   <script src="api.js"></script>
   <script src="export.js"></script>

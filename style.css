@@ -842,6 +842,128 @@ button:disabled {
   background: #b3e19d;
 }
 
+/* ========== 流程图 ========== */
+
+.flowchart-btn {
+  margin-top: 20px;
+  background: #7c5cfc;
+}
+
+.flowchart-btn:hover {
+  background: #6a4de0;
+}
+
+.flowchart-btn:active {
+  background: #5a3ec7;
+}
+
+.flowchart-btn:disabled {
+  background: #bfb0f5;
+}
+
+.flowchart-divider {
+  border: none;
+  border-top: 3px solid #e8e3ff;
+  margin: 32px 0 24px;
+}
+
+.flowchart-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.flowchart-card h3 {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #7c5cfc;
+}
+
+.flowchart-reason {
+  font-size: 13px;
+  color: #909399;
+  margin-bottom: 16px;
+}
+
+.flowchart-diagram {
+  text-align: center;
+  margin-bottom: 12px;
+  overflow-x: auto;
+}
+
+.flowchart-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.flowchart-source {
+  margin-top: 8px;
+}
+
+.flowchart-source summary {
+  font-size: 13px;
+  color: #909399;
+  cursor: pointer;
+  user-select: none;
+}
+
+.flowchart-source summary:hover {
+  color: #7c5cfc;
+}
+
+.flowchart-source-code {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  border-radius: 6px;
+  padding: 14px 18px;
+  overflow-x: auto;
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.flowchart-source-code code {
+  background: none;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+}
+
+.flowchart-not-needed {
+  text-align: center;
+  padding: 32px 24px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.flowchart-not-needed-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.flowchart-not-needed-text {
+  font-size: 14px;
+  color: #909399;
+  line-height: 1.6;
+}
+
+.flowchart-render-error {
+  background: #fef0f0;
+  border: 1px solid #fde2e2;
+  border-radius: 6px;
+  padding: 16px;
+  text-align: center;
+}
+
+.flowchart-render-error p {
+  font-size: 13px;
+  color: #f56c6c;
+}
+
 /* 隐藏（放在最后确保优先级最高） */
 .hidden {
   display: none;

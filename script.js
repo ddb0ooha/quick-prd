@@ -37,6 +37,13 @@ const generateFinalPrdBtn = document.getElementById("generate-final-prd-btn");
 const reviewQuestionsSection = document.getElementById("review-questions-section");
 const reviewQuestionsList = document.getElementById("review-questions-list");
 
+// 流程图相关
+const generateFlowchartBtn = document.getElementById("generate-flowchart-btn");
+const flowchartSection = document.getElementById("flowchart-section");
+const flowchartLoading = document.getElementById("flowchart-loading");
+const flowchartContent = document.getElementById("flowchart-content");
+const flowchartCopyBtn = document.getElementById("flowchart-copy-btn");
+
 // 历史记录相关
 const historyBtn = document.getElementById("history-btn");
 const historyModal = document.getElementById("history-modal");
@@ -78,6 +85,7 @@ let lastReviewMarkdown = "";
 let lastQAList = [];
 let isFinalPrd = false;
 let isGenerating = false;
+let lastFlowchartData = null;
 
 // ========== 答案持久化 ==========
 
@@ -375,6 +383,9 @@ generateBtn.addEventListener("click", async () => {
     outputSection.classList.remove("hidden");
     isFinalPrd = false;
     backToFinalPrdBtn.classList.add("hidden");
+    generateFlowchartBtn.classList.add("hidden");
+    flowchartSection.classList.add("hidden");
+    lastFlowchartData = null;
     showLoading();
     isGenerating = true;
 
@@ -424,6 +435,9 @@ generatePrdBtn.addEventListener("click", async () => {
     lastReviewMarkdown = "";
     isFinalPrd = false;
     backToFinalPrdBtn.classList.add("hidden");
+    generateFlowchartBtn.classList.add("hidden");
+    flowchartSection.classList.add("hidden");
+    lastFlowchartData = null;
     reviewSection.classList.add("hidden");
     prdSection.querySelector(".output-header h2").textContent = "PRD 文档预览";
 
@@ -601,6 +615,9 @@ generateFinalPrdBtn.addEventListener("click", async () => {
     // 标记为最终版，清空评审状态
     isFinalPrd = true;
     lastReviewMarkdown = "";
+
+    // 显示生成流程图按钮
+    generateFlowchartBtn.classList.remove("hidden");
   } catch (error) {
     console.error("Final PRD generation failed:", error);
     showError(error, prdContent);
@@ -758,6 +775,144 @@ historyClearBtn.addEventListener("click", () => {
   if (!confirm("确定要清空所有历史记录吗？此操作不可恢复。")) return;
   localStorage.removeItem(STORAGE_KEYS.HISTORY);
   renderHistory();
+});
+
+// ========== 流程图 ==========
+
+generateFlowchartBtn.addEventListener("click", async () => {
+  if (isGenerating) return;
+  try {
+    if (!getApiKey()) {
+      openSettings();
+      return;
+    }
+    if (!lastPrdMarkdown || !isFinalPrd) return;
+
+    // 显示加载状态
+    flowchartSection.classList.remove("hidden");
+    flowchartContent.innerHTML = "";
+    flowchartLoading.classList.remove("hidden");
+    generateFlowchartBtn.disabled = true;
+    generateFlowchartBtn.textContent = "分析中…";
+    isGenerating = true;
+
+    const loadingText = flowchartLoading.querySelector("p");
+    const rawJson = await generateFlowchartWithAI(lastPrdMarkdown, (charCount) => {
+      loadingText.textContent = `AI 正在分析流程，已接收 ${charCount} 字…`;
+    });
+
+    const data = parseFlowchartResponse(rawJson);
+    lastFlowchartData = data;
+
+    flowchartLoading.classList.add("hidden");
+    renderFlowcharts(data);
+
+    // 滚动到流程图区域
+    flowchartSection.scrollIntoView({ behavior: "smooth" });
+  } catch (error) {
+    console.error("Flowchart generation failed:", error);
+    flowchartLoading.classList.add("hidden");
+    showError(error, flowchartContent);
+  } finally {
+    isGenerating = false;
+    generateFlowchartBtn.disabled = false;
+    generateFlowchartBtn.textContent = "生成业务流程图";
+  }
+});
+
+/**
+ * 渲染流程图结果
+ * @param {object} data - { needed, reason, charts }
+ */
+function renderFlowcharts(data) {
+  if (!data.needed || data.charts.length === 0) {
+    flowchartContent.innerHTML = `
+      <div class="flowchart-not-needed">
+        <p class="flowchart-not-needed-icon">&#x2705;</p>
+        <p class="flowchart-not-needed-text">${escapeHTML(data.reason || "该 PRD 功能较为简单，无需流程图辅助理解。")}</p>
+      </div>`;
+    flowchartCopyBtn.classList.add("hidden");
+    return;
+  }
+
+  flowchartCopyBtn.classList.remove("hidden");
+
+  // 检查 Mermaid 库是否可用
+  const mermaidAvailable = typeof mermaid !== "undefined";
+
+  let html = "";
+  data.charts.forEach((chart, index) => {
+    const safeTitle = escapeHTML(chart.title);
+    const safeWhy = escapeHTML(chart.why);
+    const chartId = `mermaid-chart-${index}`;
+
+    html += `
+      <div class="flowchart-card">
+        <h3>${safeTitle}</h3>
+        <p class="flowchart-reason">${safeWhy}</p>
+        <div class="flowchart-diagram" id="${chartId}">
+          ${mermaidAvailable ? `<pre class="mermaid">${escapeHTML(chart.mermaid)}</pre>` : ""}
+        </div>
+        <details class="flowchart-source">
+          <summary>查看 Mermaid 源码</summary>
+          <pre class="flowchart-source-code"><code>${escapeHTML(chart.mermaid)}</code></pre>
+        </details>
+      </div>`;
+  });
+
+  flowchartContent.innerHTML = html;
+
+  if (!mermaidAvailable) {
+    // Mermaid CDN 加载失败，显示提示并展开所有源码
+    flowchartContent.querySelectorAll(".flowchart-diagram").forEach((el) => {
+      el.innerHTML = `<div class="flowchart-render-error"><p>流程图渲染库加载失败，请检查网络连接后刷新页面重试。</p></div>`;
+    });
+    flowchartContent.querySelectorAll(".flowchart-source").forEach((el) => {
+      el.open = true;
+    });
+    return;
+  }
+
+  // 初始化 Mermaid
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: "default",
+    flowchart: { useMaxWidth: true, htmlLabels: true },
+    securityLevel: "strict",
+  });
+
+  // 逐个渲染，单个失败不影响其他图
+  flowchartContent.querySelectorAll(".mermaid").forEach(async (el, i) => {
+    try {
+      const { svg } = await mermaid.render(`mermaid-svg-${Date.now()}-${i}`, el.textContent);
+      el.innerHTML = svg;
+    } catch (err) {
+      console.error(`Mermaid chart ${i} render failed:`, err);
+      el.innerHTML = `<div class="flowchart-render-error"><p>该流程图渲染失败，请展开下方源码查看</p></div>`;
+      const card = el.closest(".flowchart-card");
+      if (card) {
+        const details = card.querySelector(".flowchart-source");
+        if (details) details.open = true;
+      }
+    }
+  });
+}
+
+flowchartCopyBtn.addEventListener("click", () => {
+  if (!lastFlowchartData || !lastFlowchartData.charts.length) return;
+
+  const text = lastFlowchartData.charts
+    .map((chart) => `## ${chart.title}\n\n\`\`\`mermaid\n${chart.mermaid}\n\`\`\``)
+    .join("\n\n---\n\n");
+
+  copyToClipboard(text).then(() => {
+    flowchartCopyBtn.textContent = "已复制";
+    flowchartCopyBtn.classList.add("copied");
+    setTimeout(() => {
+      flowchartCopyBtn.textContent = "复制 Mermaid 源码";
+      flowchartCopyBtn.classList.remove("copied");
+    }, 1500);
+  });
 });
 
 // ========== 页面加载恢复 ==========
