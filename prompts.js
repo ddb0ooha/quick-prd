@@ -10,6 +10,14 @@ const STORAGE_KEYS = {
   INPUT: "rc_input",
   RESULT: "rc_result",
   HISTORY: "rc_history",
+  // 会话持久化
+  SESSION_QA_LIST: "rc_session_qa_list",
+  SESSION_PRD: "rc_session_prd",
+  SESSION_REVIEW: "rc_session_review",
+  SESSION_REVIEW_QUESTIONS: "rc_session_review_questions",
+  SESSION_IS_FINAL: "rc_session_is_final",
+  SESSION_FLOWCHART: "rc_session_flowchart",
+  SESSION_WIREFRAME: "rc_session_wireframe",
 };
 
 // ========== Prompt 版本定义 ==========
@@ -255,6 +263,56 @@ const PROMPT_VERSIONS = {
 - 节点文字中不要使用以下特殊字符：( ) [ ] { } " ' \` # & 如有需要用中文标点替代
 - 确保所有节点都有连线，不能有孤立节点
 - 每个流程图的 mermaid 字段是完整的 Mermaid 代码字符串`,
+
+    wireframe: `你是一位资深的产品设计师，擅长从 PRD 文档中提取页面结构。你的任务是分析一份最终版 PRD，判断是否涉及用户界面页面，如果涉及则输出每个页面的低保真原型结构说明。
+
+## 分析规则
+
+1. 仔细阅读 PRD，识别所有需要前端页面的功能点
+2. 只为需要用户交互的页面生成结构说明，以下场景不需要：
+   - 纯后端逻辑、定时任务、数据迁移
+   - 仅通过第三方系统操作（如后台管理系统已有的功能）
+   - 推送通知、短信等非页面触达方式
+3. 相关性高的页面可以合并（如"取消确认弹窗"归入"订单详情页"）
+
+## 输出要求
+
+只输出 JSON，不要输出任何其他内容。格式如下：
+
+{
+  "needed": true,
+  "reason": "简要说明为什么需要（或不需要）页面结构说明",
+  "pages": [
+    {
+      "name": "页面名称",
+      "entry": "页面入口路径，说明用户从哪里进入",
+      "structure": "该页面的 Markdown 格式结构描述"
+    }
+  ]
+}
+
+如果不涉及用户界面页面，返回：
+{"needed": false, "reason": "说明原因", "pages": []}
+
+## 结构描述规范（structure 字段）
+
+每个页面的 structure 必须按以下格式用 Markdown 描述：
+
+### 布局区块
+用无序列表按区域（顶部/主体/底部等）组织，每个区域下列出包含的组件：
+- 组件类型 + 数据字段 + 交互行为
+- 用缩进层级体现信息架构的父子关系
+
+### 页面状态
+列出该页面的关键状态：默认态、空态、加载态、错误态、特殊业务状态等
+
+## 规范约束
+
+- 只描述结构和交互，不描述视觉样式（颜色、字号、间距等）
+- 组件描述要具体：不要写"表单"，要写"表单：姓名（文本输入）、手机号（数字输入）、提交按钮"
+- 交互描述要明确：不要写"点击跳转"，要写"点击 → 跳转至订单详情页"
+- 每个页面的 structure 中使用 Markdown 格式，换行用实际换行符
+- 内容必须基于 PRD 中的信息，不要编造 PRD 未提及的功能`,
   },
 };
 
@@ -280,8 +338,9 @@ function applyPromptVersion(version) {
   REVIEW_SYSTEM_PROMPT = prompts.review;
   FINAL_PRD_SYSTEM_PROMPT = prompts.finalPrd;
   FLOWCHART_SYSTEM_PROMPT = prompts.flowchart;
+  WIREFRAME_SYSTEM_PROMPT = prompts.wireframe;
 }
 
 // 初始化：应用当前版本的 prompt
-let SYSTEM_PROMPT, PRD_SYSTEM_PROMPT, REVIEW_SYSTEM_PROMPT, FINAL_PRD_SYSTEM_PROMPT, FLOWCHART_SYSTEM_PROMPT;
+let SYSTEM_PROMPT, PRD_SYSTEM_PROMPT, REVIEW_SYSTEM_PROMPT, FINAL_PRD_SYSTEM_PROMPT, FLOWCHART_SYSTEM_PROMPT, WIREFRAME_SYSTEM_PROMPT;
 applyPromptVersion(getPromptVersion());

@@ -330,6 +330,31 @@ async function generateFlowchartWithAI(finalPrdMarkdown, onProgress) {
   );
 }
 
+// ========== 页面结构说明生成（流式） ==========
+
+/**
+ * 根据最终版 PRD 生成页面结构说明（流式传输，完成后返回 JSON）
+ * @param {string} finalPrdMarkdown - 最终版 PRD Markdown
+ * @param {function} [onProgress] - 进度回调，接收已接收字符数
+ * @returns {Promise<string>} - AI 返回的 JSON 文本
+ */
+async function generateWireframeWithAI(finalPrdMarkdown, onProgress) {
+  const userContent = `## 最终版 PRD\n\n${finalPrdMarkdown}`;
+
+  return streamAI(
+    [
+      { role: "system", content: WIREFRAME_SYSTEM_PROMPT },
+      { role: "user", content: userContent },
+    ],
+    {
+      responseFormat: { type: "json_object" },
+      onChunk: onProgress
+        ? (_delta, full) => onProgress(full.length)
+        : undefined,
+    }
+  );
+}
+
 // ========== 响应解析 ==========
 
 /**
@@ -377,6 +402,30 @@ function parseFlowchartResponse(jsonText) {
       ? parsed.charts.map((c) => ({
           ...c,
           mermaid: (c.mermaid || "").replace(/\\n/g, "\n"),
+        }))
+      : [],
+  };
+}
+
+/**
+ * 解析页面结构说明 AI 响应
+ * @param {string} jsonText - AI 返回的 JSON
+ * @returns {object} - { needed, reason, pages: [{name, entry, structure}] }
+ */
+function parseWireframeResponse(jsonText) {
+  let cleaned = jsonText.trim();
+  if (cleaned.startsWith("```")) {
+    cleaned = cleaned.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
+  }
+
+  const parsed = JSON.parse(cleaned);
+  return {
+    needed: !!parsed.needed,
+    reason: parsed.reason || "",
+    pages: Array.isArray(parsed.pages)
+      ? parsed.pages.map((p) => ({
+          ...p,
+          structure: (p.structure || "").replace(/\\n/g, "\n"),
         }))
       : [],
   };

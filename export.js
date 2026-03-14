@@ -197,6 +197,53 @@ function renderMarkdownToHTML(md) {
 }
 
 /**
+ * 组装全套文档 Markdown
+ * @param {string} prdMarkdown - 最终版 PRD Markdown
+ * @param {object|null} flowchartData - 流程图数据 { needed, charts: [{title, mermaid}] }
+ * @param {object|null} wireframeData - 页面结构数据 { needed, pages: [{name, entry, structure}] }
+ * @param {object} options - { includeFlowchart: boolean, includeWireframe: boolean }
+ * @returns {string} - 完整 Markdown
+ */
+function generateFullDocument(prdMarkdown, flowchartData, wireframeData, options) {
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+
+  let md = `# QuickPRD - 全套文档\n\n`;
+  md += `> 导出时间：${dateStr}\n\n`;
+
+  // PRD 文档
+  md += `---\n\n`;
+  md += prdMarkdown + "\n\n";
+
+  // 业务流程图
+  if (options.includeFlowchart && flowchartData && flowchartData.needed && flowchartData.charts.length > 0) {
+    md += `---\n\n`;
+    md += `## 业务流程图\n\n`;
+    flowchartData.charts.forEach((chart) => {
+      md += `### ${chart.title}\n\n`;
+      md += `\`\`\`mermaid\n${chart.mermaid}\n\`\`\`\n\n`;
+    });
+  }
+
+  // 页面结构说明
+  if (options.includeWireframe && wireframeData && wireframeData.needed && wireframeData.pages.length > 0) {
+    md += `---\n\n`;
+    md += `## 页面结构说明\n\n`;
+    wireframeData.pages.forEach((page) => {
+      md += `### ${page.name}\n\n`;
+      if (page.entry) md += `**入口**：${page.entry}\n\n`;
+      md += page.structure + "\n\n";
+    });
+  }
+
+  return md;
+}
+
+/**
  * 下载 Markdown 文件
  * @param {string} content - 文件内容
  * @param {string} filename - 文件名（不含扩展名）

@@ -37,12 +37,32 @@ const generateFinalPrdBtn = document.getElementById("generate-final-prd-btn");
 const reviewQuestionsSection = document.getElementById("review-questions-section");
 const reviewQuestionsList = document.getElementById("review-questions-list");
 
+// PRD 附加操作
+const prdExtraActions = document.getElementById("prd-extra-actions");
+
 // 流程图相关
 const generateFlowchartBtn = document.getElementById("generate-flowchart-btn");
 const flowchartSection = document.getElementById("flowchart-section");
 const flowchartLoading = document.getElementById("flowchart-loading");
 const flowchartContent = document.getElementById("flowchart-content");
 const flowchartCopyBtn = document.getElementById("flowchart-copy-btn");
+
+// 页面结构说明相关
+const generateWireframeBtn = document.getElementById("generate-wireframe-btn");
+const wireframeSection = document.getElementById("wireframe-section");
+const wireframeLoading = document.getElementById("wireframe-loading");
+const wireframeContent = document.getElementById("wireframe-content");
+const wireframeCopyBtn = document.getElementById("wireframe-copy-btn");
+
+// 导出全套文档相关
+const exportAllBtn = document.getElementById("export-all-btn");
+const exportAllModal = document.getElementById("export-all-modal");
+const exportAllCancelBtn = document.getElementById("export-all-cancel-btn");
+const exportAllConfirmBtn = document.getElementById("export-all-confirm-btn");
+const exportIncludeFlowchart = document.getElementById("export-include-flowchart");
+const exportIncludeWireframe = document.getElementById("export-include-wireframe");
+const exportFlowchartOption = document.getElementById("export-flowchart-option");
+const exportWireframeOption = document.getElementById("export-wireframe-option");
 
 // 历史记录相关
 const historyBtn = document.getElementById("history-btn");
@@ -86,6 +106,7 @@ let lastQAList = [];
 let isFinalPrd = false;
 let isGenerating = false;
 let lastFlowchartData = null;
+let lastWireframeData = null;
 
 // ========== 答案持久化 ==========
 
@@ -110,6 +131,31 @@ function restoreAnswers() {
       if (el) el.value = value;
     }
   } catch (_) {}
+}
+
+// ========== 会话持久化 ==========
+
+function saveSession() {
+  localStorage.setItem(STORAGE_KEYS.SESSION_QA_LIST, JSON.stringify(lastQAList));
+  localStorage.setItem(STORAGE_KEYS.SESSION_PRD, lastPrdMarkdown);
+  localStorage.setItem(STORAGE_KEYS.SESSION_REVIEW, lastReviewMarkdown);
+  localStorage.setItem(STORAGE_KEYS.SESSION_IS_FINAL, isFinalPrd ? "1" : "");
+  localStorage.setItem(STORAGE_KEYS.SESSION_FLOWCHART, lastFlowchartData ? JSON.stringify(lastFlowchartData) : "");
+  localStorage.setItem(STORAGE_KEYS.SESSION_WIREFRAME, lastWireframeData ? JSON.stringify(lastWireframeData) : "");
+}
+
+function saveReviewQuestions(questions) {
+  localStorage.setItem(STORAGE_KEYS.SESSION_REVIEW_QUESTIONS, JSON.stringify(questions));
+}
+
+function clearSession() {
+  localStorage.removeItem(STORAGE_KEYS.SESSION_QA_LIST);
+  localStorage.removeItem(STORAGE_KEYS.SESSION_PRD);
+  localStorage.removeItem(STORAGE_KEYS.SESSION_REVIEW);
+  localStorage.removeItem(STORAGE_KEYS.SESSION_REVIEW_QUESTIONS);
+  localStorage.removeItem(STORAGE_KEYS.SESSION_IS_FINAL);
+  localStorage.removeItem(STORAGE_KEYS.SESSION_FLOWCHART);
+  localStorage.removeItem(STORAGE_KEYS.SESSION_WIREFRAME);
 }
 
 // ========== 示例需求 ==========
@@ -383,9 +429,11 @@ generateBtn.addEventListener("click", async () => {
     outputSection.classList.remove("hidden");
     isFinalPrd = false;
     backToFinalPrdBtn.classList.add("hidden");
-    generateFlowchartBtn.classList.add("hidden");
+    prdExtraActions.classList.add("hidden");
     flowchartSection.classList.add("hidden");
+    wireframeSection.classList.add("hidden");
     lastFlowchartData = null;
+    lastWireframeData = null;
     showLoading();
     isGenerating = true;
 
@@ -403,6 +451,7 @@ generateBtn.addEventListener("click", async () => {
     localStorage.setItem(STORAGE_KEYS.INPUT, text);
     localStorage.setItem(STORAGE_KEYS.RESULT, JSON.stringify(grouped));
     localStorage.removeItem(STORAGE_KEYS.ANSWERS);
+    clearSession();
     saveToHistory(text, grouped);
   } catch (error) {
     console.error("Analysis failed:", error);
@@ -435,9 +484,11 @@ generatePrdBtn.addEventListener("click", async () => {
     lastReviewMarkdown = "";
     isFinalPrd = false;
     backToFinalPrdBtn.classList.add("hidden");
-    generateFlowchartBtn.classList.add("hidden");
+    prdExtraActions.classList.add("hidden");
     flowchartSection.classList.add("hidden");
+    wireframeSection.classList.add("hidden");
     lastFlowchartData = null;
+    lastWireframeData = null;
     reviewSection.classList.add("hidden");
     prdSection.querySelector(".output-header h2").textContent = "PRD 文档预览";
 
@@ -459,6 +510,7 @@ generatePrdBtn.addEventListener("click", async () => {
 
     // 最终完整渲染一次，确保格式正确
     prdContent.innerHTML = renderMarkdownToHTML(markdown);
+    saveSession();
   } catch (error) {
     console.error("PRD generation failed:", error);
     showError(error, prdContent);
@@ -540,6 +592,8 @@ prdReviewBtn.addEventListener("click", async () => {
 
     // 渲染待确认问题 UI
     renderReviewQuestions(reviewQuestions);
+    saveReviewQuestions(reviewQuestions);
+    saveSession();
 
     // 滚动到评审区域
     reviewSection.scrollIntoView({ behavior: "smooth" });
@@ -616,8 +670,9 @@ generateFinalPrdBtn.addEventListener("click", async () => {
     isFinalPrd = true;
     lastReviewMarkdown = "";
 
-    // 显示生成流程图按钮
-    generateFlowchartBtn.classList.remove("hidden");
+    // 显示附加操作按钮（流程图 + 页面结构说明）
+    prdExtraActions.classList.remove("hidden");
+    saveSession();
   } catch (error) {
     console.error("Final PRD generation failed:", error);
     showError(error, prdContent);
@@ -732,6 +787,7 @@ function loadHistoryItem(index) {
   localStorage.setItem(STORAGE_KEYS.INPUT, item.input);
   localStorage.setItem(STORAGE_KEYS.RESULT, JSON.stringify(item.result));
   localStorage.removeItem(STORAGE_KEYS.ANSWERS);
+  clearSession();
 
   prdSection.classList.add("hidden");
   outputSection.classList.remove("hidden");
@@ -803,6 +859,7 @@ generateFlowchartBtn.addEventListener("click", async () => {
 
     const data = parseFlowchartResponse(rawJson);
     lastFlowchartData = data;
+    saveSession();
 
     flowchartLoading.classList.add("hidden");
     renderFlowcharts(data);
@@ -915,6 +972,169 @@ flowchartCopyBtn.addEventListener("click", () => {
   });
 });
 
+// ========== 页面结构说明 ==========
+
+generateWireframeBtn.addEventListener("click", async () => {
+  if (isGenerating) return;
+  try {
+    if (!getApiKey()) {
+      openSettings();
+      return;
+    }
+    if (!lastPrdMarkdown || !isFinalPrd) return;
+
+    wireframeSection.classList.remove("hidden");
+    wireframeContent.innerHTML = "";
+    wireframeLoading.classList.remove("hidden");
+    generateWireframeBtn.disabled = true;
+    generateWireframeBtn.textContent = "分析中…";
+    isGenerating = true;
+
+    const loadingText = wireframeLoading.querySelector("p");
+    const rawJson = await generateWireframeWithAI(lastPrdMarkdown, (charCount) => {
+      loadingText.textContent = `AI 正在分析页面结构，已接收 ${charCount} 字…`;
+    });
+
+    const data = parseWireframeResponse(rawJson);
+    lastWireframeData = data;
+    saveSession();
+
+    wireframeLoading.classList.add("hidden");
+    renderWireframes(data);
+
+    wireframeSection.scrollIntoView({ behavior: "smooth" });
+  } catch (error) {
+    console.error("Wireframe generation failed:", error);
+    wireframeLoading.classList.add("hidden");
+    showError(error, wireframeContent);
+  } finally {
+    isGenerating = false;
+    generateWireframeBtn.disabled = false;
+    generateWireframeBtn.textContent = "生成页面结构说明";
+  }
+});
+
+/**
+ * 渲染页面结构说明
+ * @param {object} data - { needed, reason, pages }
+ */
+function renderWireframes(data) {
+  if (!data.needed || data.pages.length === 0) {
+    wireframeContent.innerHTML = `
+      <div class="wireframe-not-needed">
+        <p class="wireframe-not-needed-icon">&#x2705;</p>
+        <p class="wireframe-not-needed-text">${escapeHTML(data.reason || "该 PRD 不涉及用户界面页面，无需页面结构说明。")}</p>
+      </div>`;
+    wireframeCopyBtn.classList.add("hidden");
+    return;
+  }
+
+  wireframeCopyBtn.classList.remove("hidden");
+
+  let html = "";
+  data.pages.forEach((page) => {
+    const safeName = escapeHTML(page.name);
+    const safeEntry = escapeHTML(page.entry || "");
+
+    html += `
+      <div class="wireframe-card">
+        <div class="wireframe-card-header">
+          <h3>${safeName}</h3>
+          ${safeEntry ? `<p class="wireframe-card-entry">入口：${safeEntry}</p>` : ""}
+        </div>
+        <div class="wireframe-card-body">
+          ${renderMarkdownToHTML(page.structure || "")}
+        </div>
+      </div>`;
+  });
+
+  wireframeContent.innerHTML = html;
+}
+
+wireframeCopyBtn.addEventListener("click", () => {
+  if (!lastWireframeData || !lastWireframeData.pages.length) return;
+
+  const text = lastWireframeData.pages
+    .map((page) => {
+      let md = `## ${page.name}`;
+      if (page.entry) md += `\n\n**入口**：${page.entry}`;
+      md += `\n\n${page.structure}`;
+      return md;
+    })
+    .join("\n\n---\n\n");
+
+  copyToClipboard(text).then(() => {
+    wireframeCopyBtn.textContent = "已复制";
+    wireframeCopyBtn.classList.add("copied");
+    setTimeout(() => {
+      wireframeCopyBtn.textContent = "复制结构说明";
+      wireframeCopyBtn.classList.remove("copied");
+    }, 1500);
+  });
+});
+
+// ========== 导出全套文档 ==========
+
+exportAllBtn.addEventListener("click", () => {
+  // 更新选项状态：未生成的数据禁用对应选项
+  const hasFlowchart = lastFlowchartData && lastFlowchartData.needed && lastFlowchartData.charts.length > 0;
+  const hasWireframe = lastWireframeData && lastWireframeData.needed && lastWireframeData.pages.length > 0;
+
+  exportIncludeFlowchart.checked = hasFlowchart;
+  exportIncludeFlowchart.disabled = !hasFlowchart;
+  exportFlowchartOption.classList.toggle("export-option-disabled", !hasFlowchart);
+
+  // 移除旧的提示
+  exportFlowchartOption.querySelectorAll(".export-option-hint").forEach((el) => el.remove());
+  if (!hasFlowchart) {
+    const hint = document.createElement("p");
+    hint.className = "export-option-hint";
+    hint.textContent = "尚未生成或不需要流程图";
+    exportFlowchartOption.appendChild(hint);
+  }
+
+  exportIncludeWireframe.checked = hasWireframe;
+  exportIncludeWireframe.disabled = !hasWireframe;
+  exportWireframeOption.classList.toggle("export-option-disabled", !hasWireframe);
+
+  exportWireframeOption.querySelectorAll(".export-option-hint").forEach((el) => el.remove());
+  if (!hasWireframe) {
+    const hint = document.createElement("p");
+    hint.className = "export-option-hint";
+    hint.textContent = "尚未生成或不需要页面结构说明";
+    exportWireframeOption.appendChild(hint);
+  }
+
+  exportAllModal.classList.remove("hidden");
+});
+
+exportAllCancelBtn.addEventListener("click", () => {
+  exportAllModal.classList.add("hidden");
+});
+
+exportAllModal.addEventListener("click", (e) => {
+  if (e.target === exportAllModal) {
+    exportAllModal.classList.add("hidden");
+  }
+});
+
+exportAllConfirmBtn.addEventListener("click", () => {
+  if (!lastPrdMarkdown) return;
+
+  const md = generateFullDocument(
+    lastPrdMarkdown,
+    lastFlowchartData,
+    lastWireframeData,
+    {
+      includeFlowchart: exportIncludeFlowchart.checked,
+      includeWireframe: exportIncludeWireframe.checked,
+    }
+  );
+
+  downloadMarkdown(md, "QuickPRD-全套文档");
+  exportAllModal.classList.add("hidden");
+});
+
 // ========== 页面加载恢复 ==========
 
 (function restore() {
@@ -928,7 +1148,71 @@ flowchartCopyBtn.addEventListener("click", () => {
     lastResult = JSON.parse(savedResult);
     outputSection.classList.remove("hidden");
     render(lastResult);
-  } catch (_) {}
+  } catch (_) {
+    return;
+  }
+
+  // — 恢复 QA list —
+  const savedQAList = localStorage.getItem(STORAGE_KEYS.SESSION_QA_LIST);
+  if (savedQAList) {
+    try { lastQAList = JSON.parse(savedQAList); } catch (_) {}
+  }
+
+  // — 恢复 PRD —
+  const savedPrd = localStorage.getItem(STORAGE_KEYS.SESSION_PRD);
+  const savedIsFinal = localStorage.getItem(STORAGE_KEYS.SESSION_IS_FINAL);
+  if (savedPrd) {
+    lastPrdMarkdown = savedPrd;
+    isFinalPrd = savedIsFinal === "1";
+
+    outputSection.classList.add("hidden");
+    prdSection.classList.remove("hidden");
+    prdContent.innerHTML = renderMarkdownToHTML(savedPrd);
+
+    const prdTitle = prdSection.querySelector(".output-header h2");
+    prdTitle.textContent = isFinalPrd ? "PRD 文档（最终版）" : "PRD 文档预览";
+
+    if (isFinalPrd) {
+      prdExtraActions.classList.remove("hidden");
+    }
+  }
+
+  // — 恢复评审 —
+  const savedReview = localStorage.getItem(STORAGE_KEYS.SESSION_REVIEW);
+  if (savedReview && savedPrd) {
+    lastReviewMarkdown = savedReview;
+    const cleanedMarkdown = stripReviewQuestionsBlock(savedReview);
+    reviewContent.innerHTML = renderMarkdownToHTML(cleanedMarkdown);
+    reviewSection.classList.remove("hidden");
+
+    const savedReviewQ = localStorage.getItem(STORAGE_KEYS.SESSION_REVIEW_QUESTIONS);
+    if (savedReviewQ) {
+      try {
+        const questions = JSON.parse(savedReviewQ);
+        renderReviewQuestions(questions);
+      } catch (_) {}
+    }
+  }
+
+  // — 恢复流程图 —
+  const savedFlowchart = localStorage.getItem(STORAGE_KEYS.SESSION_FLOWCHART);
+  if (savedFlowchart && isFinalPrd) {
+    try {
+      lastFlowchartData = JSON.parse(savedFlowchart);
+      flowchartSection.classList.remove("hidden");
+      renderFlowcharts(lastFlowchartData);
+    } catch (_) {}
+  }
+
+  // — 恢复页面结构 —
+  const savedWireframe = localStorage.getItem(STORAGE_KEYS.SESSION_WIREFRAME);
+  if (savedWireframe && isFinalPrd) {
+    try {
+      lastWireframeData = JSON.parse(savedWireframe);
+      wireframeSection.classList.remove("hidden");
+      renderWireframes(lastWireframeData);
+    } catch (_) {}
+  }
 })();
 
 // ========== 首次运行检测 ==========

@@ -842,10 +842,81 @@ button:disabled {
   background: #b3e19d;
 }
 
+/* ========== PRD 附加操作按钮组 ========== */
+
+.prd-extra-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+/* ========== 导出全套文档 ========== */
+
+.export-all-btn {
+  background: #606266;
+}
+
+.export-all-btn:hover {
+  background: #4a4a4d;
+}
+
+.export-all-btn:active {
+  background: #3a3a3d;
+}
+
+.modal-sm {
+  max-width: 380px;
+}
+
+.export-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #303133;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #409eff;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"]:disabled {
+  cursor: default;
+}
+
+.checkbox-label span {
+  user-select: none;
+}
+
+.export-option-disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.export-option-disabled input[type="checkbox"] {
+  cursor: default;
+}
+
+.export-option-hint {
+  font-size: 12px;
+  color: #c0c4cc;
+  margin-left: 24px;
+}
+
 /* ========== 流程图 ========== */
 
 .flowchart-btn {
-  margin-top: 20px;
   background: #7c5cfc;
 }
 
@@ -962,6 +1033,89 @@ button:disabled {
 .flowchart-render-error p {
   font-size: 13px;
   color: #f56c6c;
+}
+
+/* ========== 页面结构说明 ========== */
+
+.wireframe-btn {
+  background: #36b4a7;
+}
+
+.wireframe-btn:hover {
+  background: #2e9e93;
+}
+
+.wireframe-btn:active {
+  background: #26887e;
+}
+
+.wireframe-btn:disabled {
+  background: #9dd5cf;
+}
+
+.wireframe-divider {
+  border: none;
+  border-top: 3px solid #d6f0ed;
+  margin: 32px 0 24px;
+}
+
+.wireframe-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.wireframe-card-header {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.wireframe-card-header h3 {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: #36b4a7;
+}
+
+.wireframe-card-entry {
+  font-size: 13px;
+  color: #909399;
+}
+
+.wireframe-card-body {
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.wireframe-card-body ul {
+  padding-left: 20px;
+  margin: 4px 0;
+}
+
+.wireframe-card-body li {
+  margin: 2px 0;
+}
+
+.wireframe-not-needed {
+  text-align: center;
+  padding: 32px 24px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.wireframe-not-needed-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.wireframe-not-needed-text {
+  font-size: 14px;
+  color: #909399;
+  line-height: 1.6;
 }
 
 /* 隐藏（放在最后确保优先级最高） */

@@ -66,7 +66,11 @@
           <p>AI 正在生成 PRD 文档，请稍候…</p>
         </div>
         <div id="prd-content" class="prd-content"></div>
-        <button id="generate-flowchart-btn" class="flowchart-btn hidden">生成业务流程图</button>
+        <div class="prd-extra-actions hidden" id="prd-extra-actions">
+          <button id="generate-flowchart-btn" class="flowchart-btn">生成业务流程图</button>
+          <button id="generate-wireframe-btn" class="wireframe-btn">生成页面结构说明</button>
+          <button id="export-all-btn" class="export-all-btn">导出全套文档</button>
+        </div>
 
         <div id="review-section" class="review-section hidden">
           <hr class="review-divider">
@@ -100,6 +104,21 @@
           </div>
           <div id="flowchart-content" class="flowchart-content"></div>
         </div>
+
+        <div id="wireframe-section" class="wireframe-section hidden">
+          <hr class="wireframe-divider">
+          <div class="output-header">
+            <h2>页面结构说明</h2>
+            <div class="output-actions">
+              <button id="wireframe-copy-btn" class="action-btn">复制结构说明</button>
+            </div>
+          </div>
+          <div id="wireframe-loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>AI 正在分析页面结构…</p>
+          </div>
+          <div id="wireframe-content" class="wireframe-content"></div>
+        </div>
       </section>
     </main>
   </div>
@@ -116,6 +135,32 @@
       </div>
       <div class="modal-actions">
         <button id="history-close-btn" class="btn-secondary">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 导出全套文档弹窗 -->
+  <div id="export-all-modal" class="modal-overlay hidden">
+    <div class="modal modal-sm">
+      <h3>导出全套文档</h3>
+      <p class="modal-hint">选择要包含在导出文档中的内容：</p>
+      <div class="export-options">
+        <label class="checkbox-label">
+          <input type="checkbox" id="export-include-prd" checked disabled>
+          <span>PRD 文档（最终版）</span>
+        </label>
+        <label class="checkbox-label" id="export-flowchart-option">
+          <input type="checkbox" id="export-include-flowchart" checked>
+          <span>业务流程图</span>
+        </label>
+        <label class="checkbox-label" id="export-wireframe-option">
+          <input type="checkbox" id="export-include-wireframe" checked>
+          <span>页面结构说明</span>
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button id="export-all-cancel-btn" class="btn-secondary">取消</button>
+        <button id="export-all-confirm-btn">确认导出</button>
       </div>
     </div>
   </div>
