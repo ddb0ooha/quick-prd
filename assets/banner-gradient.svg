@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 420">
+  <defs>
+    <linearGradient id="gbg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e3a5f"/>
+      <stop offset="50%" style="stop-color:#2d1b69"/>
+      <stop offset="100%" style="stop-color:#1a3c34"/>
+    </linearGradient>
+    <linearGradient id="titleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#60a5fa"/>
+      <stop offset="50%" style="stop-color:#c084fc"/>
+      <stop offset="100%" style="stop-color:#34d399"/>
+    </linearGradient>
+    <radialGradient id="spot1" cx="20%" cy="30%" r="40%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:0.15"/>
+      <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:0"/>
+    </radialGradient>
+    <radialGradient id="spot2" cx="80%" cy="70%" r="40%">
+      <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:0.15"/>
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:0"/>
+    </radialGradient>
+    <radialGradient id="spot3" cx="70%" cy="20%" r="30%">
+      <stop offset="0%" style="stop-color:#10b981;stop-opacity:0.1"/>
+      <stop offset="100%" style="stop-color:#10b981;stop-opacity:0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- 渐变背景 -->
+  <rect width="1280" height="420" fill="url(#gbg)"/>
+  <rect width="1280" height="420" fill="url(#spot1)"/>
+  <rect width="1280" height="420" fill="url(#spot2)"/>
+  <rect width="1280" height="420" fill="url(#spot3)"/>
+
+  <!-- 装饰圆环 -->
+  <circle cx="180" cy="100" r="80" fill="none" stroke="#60a5fa" stroke-width="0.5" opacity="0.2"/>
+  <circle cx="180" cy="100" r="120" fill="none" stroke="#60a5fa" stroke-width="0.5" opacity="0.1"/>
+  <circle cx="1100" cy="320" r="90" fill="none" stroke="#8b5cf6" stroke-width="0.5" opacity="0.2"/>
+  <circle cx="1100" cy="320" r="140" fill="none" stroke="#8b5cf6" stroke-width="0.5" opacity="0.1"/>
+
+  <!-- 浮动圆点装饰 -->
+  <circle cx="300" cy="80" r="3" fill="#60a5fa" opacity="0.4"/>
+  <circle cx="450" cy="350" r="2" fill="#a78bfa" opacity="0.3"/>
+  <circle cx="850" cy="70" r="2.5" fill="#34d399" opacity="0.4"/>
+  <circle cx="1000" cy="130" r="2" fill="#60a5fa" opacity="0.3"/>
+  <circle cx="200" cy="300" r="2" fill="#c084fc" opacity="0.3"/>
+  <circle cx="1050" cy="250" r="3" fill="#34d399" opacity="0.3"/>
+  <circle cx="700" cy="380" r="2" fill="#60a5fa" opacity="0.25"/>
+
+  <!-- 主标题 -->
+  <text x="640" y="145" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="72" font-weight="800" fill="url(#titleGrad)" letter-spacing="-2">QuickPRD</text>
+
+  <!-- 分隔线 -->
+  <rect x="560" y="170" width="160" height="2" rx="1" fill="url(#titleGrad)" opacity="0.5"/>
+
+  <!-- 副标题 -->
+  <text x="640" y="210" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="22" fill="#e2e8f0" font-weight="300" letter-spacing="1">AI 驱动的产品需求分析工具</text>
+
+  <!-- 描述 -->
+  <text x="640" y="248" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="15" fill="#94a3b8">从一句模糊需求，到可评审的 PRD 文档</text>
+
+  <!-- 功能亮点 -->
+  <g transform="translate(265, 285)">
+    <!-- 智能分析 -->
+    <g>
+      <rect x="0" y="0" width="150" height="60" rx="10" fill="#ffffff" opacity="0.05" stroke="#ffffff" stroke-width="0.5" stroke-opacity="0.1"/>
+      <circle cx="30" cy="30" r="14" fill="#3b82f6" opacity="0.2"/>
+      <text x="30" y="35" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14">&#x1F50D;</text>
+      <text x="55" y="25" font-family="system-ui, sans-serif" font-size="13" font-weight="600" fill="#e2e8f0">智能分析</text>
+      <text x="55" y="43" font-family="system-ui, sans-serif" font-size="11" fill="#94a3b8">6 维度需求澄清</text>
+    </g>
+
+    <!-- PRD 生成 -->
+    <g transform="translate(170, 0)">
+      <rect x="0" y="0" width="150" height="60" rx="10" fill="#ffffff" opacity="0.05" stroke="#ffffff" stroke-width="0.5" stroke-opacity="0.1"/>
+      <circle cx="30" cy="30" r="14" fill="#8b5cf6" opacity="0.2"/>
+      <text x="30" y="35" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14">&#x1F4DD;</text>
+      <text x="55" y="25" font-family="system-ui, sans-serif" font-size="13" font-weight="600" fill="#e2e8f0">PRD 生成</text>
+      <text x="55" y="43" font-family="system-ui, sans-serif" font-size="11" fill="#94a3b8">结构化文档输出</text>
+    </g>
+
+    <!-- 风控评审 -->
+    <g transform="translate(340, 0)">
+      <rect x="0" y="0" width="150" height="60" rx="10" fill="#ffffff" opacity="0.05" stroke="#ffffff" stroke-width="0.5" stroke-opacity="0.1"/>
+      <circle cx="30" cy="30" r="14" fill="#f59e0b" opacity="0.2"/>
+      <text x="30" y="35" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14">&#x1F6E1;</text>
+      <text x="55" y="25" font-family="system-ui, sans-serif" font-size="13" font-weight="600" fill="#e2e8f0">风控评审</text>
+      <text x="55" y="43" font-family="system-ui, sans-serif" font-size="11" fill="#94a3b8">MVP 视角审查</text>
+    </g>
+
+    <!-- 流程图 -->
+    <g transform="translate(510, 0)">
+      <rect x="0" y="0" width="150" height="60" rx="10" fill="#ffffff" opacity="0.05" stroke="#ffffff" stroke-width="0.5" stroke-opacity="0.1"/>
+      <circle cx="30" cy="30" r="14" fill="#10b981" opacity="0.2"/>
+      <text x="30" y="35" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14">&#x1F4CA;</text>
+      <text x="55" y="25" font-family="system-ui, sans-serif" font-size="13" font-weight="600" fill="#e2e8f0">流程导出</text>
+      <text x="55" y="43" font-family="system-ui, sans-serif" font-size="11" fill="#94a3b8">Mermaid 可视化</text>
+    </g>
+  </g>
+
+  <!-- 底部技术栈标签 -->
+  <g transform="translate(440, 375)">
+    <text x="0" y="14" font-family="system-ui, sans-serif" font-size="12" fill="#64748b">HTML/CSS/JS</text>
+    <circle cx="100" cy="10" r="1.5" fill="#475569"/>
+    <text x="112" y="14" font-family="system-ui, sans-serif" font-size="12" fill="#64748b">DeepSeek</text>
+    <circle cx="186" cy="10" r="1.5" fill="#475569"/>
+    <text x="198" y="14" font-family="system-ui, sans-serif" font-size="12" fill="#64748b">SSE Streaming</text>
+    <circle cx="306" cy="10" r="1.5" fill="#475569"/>
+    <text x="318" y="14" font-family="system-ui, sans-serif" font-size="12" fill="#64748b">Zero Build</text>
+  </g>
+</svg>

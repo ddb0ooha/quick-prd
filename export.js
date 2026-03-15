@@ -117,8 +117,8 @@ function renderMarkdownToHTML(md) {
     return escapeHTML(text)
       .replace(/\*\*\[待确认\]\*\*/g, '<span class="prd-pending">[待确认]</span>')
       .replace(/`([^`]+?)`/g, "<code>$1</code>")
-      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-      .replace(/\*(.+?)\*/g, "<em>$1</em>");
+      .replace(/\*\*([\s\S]+?)\*\*/g, (_, inner) => `<strong>${inner.replace(/\*(.+?)\*/g, "<em>$1</em>")}</strong>`)
+      .replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, "<em>$1</em>");
   }
 
   for (let i = 0; i < lines.length; i++) {

@@ -328,7 +328,7 @@ function getPromptVersion() {
 }
 
 function setPromptVersion(version) {
-  localStorage.setItem(STORAGE_KEYS.PROMPT_VERSION, version);
+  safeSetItem(STORAGE_KEYS.PROMPT_VERSION, version);
 }
 
 function applyPromptVersion(version) {

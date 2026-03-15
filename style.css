@@ -208,6 +208,12 @@ button:disabled {
   color: #fff;
 }
 
+.action-btn.copy-failed {
+  background: #f56c6c;
+  border-color: #f56c6c;
+  color: #fff;
+}
+
 /* 加载动画 */
 .loading {
   text-align: center;
@@ -283,6 +289,7 @@ button:disabled {
   border-radius: 4px;
   resize: vertical;
   min-height: 36px;
+  overflow: hidden;
   transition: border-color 0.2s;
 }
 
@@ -812,6 +819,7 @@ button:disabled {
   border-radius: 4px;
   resize: vertical;
   min-height: 36px;
+  overflow: hidden;
   transition: border-color 0.2s;
 }
 

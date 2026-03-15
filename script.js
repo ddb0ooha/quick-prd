@@ -79,6 +79,49 @@ function escapeHTML(str) {
   return div.innerHTML;
 }
 
+const _copyTimers = new WeakMap();
+function handleCopyButton(btn, text, originalLabel) {
+  copyToClipboard(text).then(() => {
+    const prev = _copyTimers.get(btn);
+    if (prev) clearTimeout(prev);
+    btn.textContent = "已复制";
+    btn.classList.add("copied");
+    _copyTimers.set(btn, setTimeout(() => {
+      btn.textContent = originalLabel;
+      btn.classList.remove("copied");
+      _copyTimers.delete(btn);
+    }, 1500));
+  }).catch(() => {
+    const prev = _copyTimers.get(btn);
+    if (prev) clearTimeout(prev);
+    btn.textContent = "复制失败";
+    btn.classList.add("copy-failed");
+    _copyTimers.set(btn, setTimeout(() => {
+      btn.textContent = originalLabel;
+      btn.classList.remove("copy-failed");
+      _copyTimers.delete(btn);
+    }, 1500));
+  });
+}
+
+function autoResize(el) {
+  el.style.height = "auto";
+  el.style.height = el.scrollHeight + "px";
+}
+
+let _storageWarningShown = false;
+function safeSetItem(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch (e) {
+    console.error("localStorage 写入失败:", e);
+    if (!_storageWarningShown) {
+      _storageWarningShown = true;
+      alert("本地存储空间不足，部分数据可能无法保存。请清理历史记录后重试。");
+    }
+  }
+}
+
 function copyToClipboard(text) {
   if (navigator.clipboard && window.isSecureContext) {
     return navigator.clipboard.writeText(text);
@@ -90,11 +133,12 @@ function copyToClipboard(text) {
   ta.style.left = "-9999px";
   document.body.appendChild(ta);
   ta.select();
+  let ok = false;
   try {
-    document.execCommand("copy");
+    ok = document.execCommand("copy");
   } catch (_) {}
   document.body.removeChild(ta);
-  return Promise.resolve();
+  return ok ? Promise.resolve() : Promise.reject(new Error("COPY_FAILED"));
 }
 
 // ========== 状态 ==========
@@ -107,6 +151,7 @@ let isFinalPrd = false;
 let isGenerating = false;
 let lastFlowchartData = null;
 let lastWireframeData = null;
+let _mermaidIdCounter = 0;
 
 // ========== 答案持久化 ==========
 
@@ -118,7 +163,7 @@ function saveAnswers() {
       answers[el.id] = el.value;
     }
   });
-  localStorage.setItem(STORAGE_KEYS.ANSWERS, JSON.stringify(answers));
+  safeSetItem(STORAGE_KEYS.ANSWERS, JSON.stringify(answers));
 }
 
 function restoreAnswers() {
@@ -136,16 +181,16 @@ function restoreAnswers() {
 // ========== 会话持久化 ==========
 
 function saveSession() {
-  localStorage.setItem(STORAGE_KEYS.SESSION_QA_LIST, JSON.stringify(lastQAList));
-  localStorage.setItem(STORAGE_KEYS.SESSION_PRD, lastPrdMarkdown);
-  localStorage.setItem(STORAGE_KEYS.SESSION_REVIEW, lastReviewMarkdown);
-  localStorage.setItem(STORAGE_KEYS.SESSION_IS_FINAL, isFinalPrd ? "1" : "");
-  localStorage.setItem(STORAGE_KEYS.SESSION_FLOWCHART, lastFlowchartData ? JSON.stringify(lastFlowchartData) : "");
-  localStorage.setItem(STORAGE_KEYS.SESSION_WIREFRAME, lastWireframeData ? JSON.stringify(lastWireframeData) : "");
+  safeSetItem(STORAGE_KEYS.SESSION_QA_LIST, JSON.stringify(lastQAList));
+  safeSetItem(STORAGE_KEYS.SESSION_PRD, lastPrdMarkdown);
+  safeSetItem(STORAGE_KEYS.SESSION_REVIEW, lastReviewMarkdown);
+  safeSetItem(STORAGE_KEYS.SESSION_IS_FINAL, isFinalPrd ? "1" : "");
+  safeSetItem(STORAGE_KEYS.SESSION_FLOWCHART, lastFlowchartData ? JSON.stringify(lastFlowchartData) : "");
+  safeSetItem(STORAGE_KEYS.SESSION_WIREFRAME, lastWireframeData ? JSON.stringify(lastWireframeData) : "");
 }
 
 function saveReviewQuestions(questions) {
-  localStorage.setItem(STORAGE_KEYS.SESSION_REVIEW_QUESTIONS, JSON.stringify(questions));
+  safeSetItem(STORAGE_KEYS.SESSION_REVIEW_QUESTIONS, JSON.stringify(questions));
 }
 
 function clearSession() {
@@ -210,9 +255,10 @@ function render(grouped) {
   // 恢复已保存的答案
   restoreAnswers();
 
-  // 绑定答案自动保存
+  // 绑定答案自动保存 + 自动扩展高度
   output.querySelectorAll(".answer-input").forEach((el) => {
-    el.addEventListener("input", saveAnswers);
+    el.addEventListener("input", () => { saveAnswers(); autoResize(el); });
+    autoResize(el);
   });
 }
 
@@ -308,6 +354,11 @@ function renderReviewQuestions(questions) {
     })
     .join("");
   reviewQuestionsSection.classList.remove("hidden");
+
+  // 绑定自动扩展高度
+  reviewQuestionsList.querySelectorAll(".review-question-input").forEach((el) => {
+    el.addEventListener("input", () => autoResize(el));
+  });
 }
 
 /**
@@ -382,6 +433,20 @@ settingsModal.addEventListener("click", (e) => {
   if (e.target === settingsModal) closeSettings();
 });
 
+// ========== ESC 关闭模态框 ==========
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    if (!settingsModal.classList.contains("hidden")) {
+      closeSettings();
+    } else if (!historyModal.classList.contains("hidden")) {
+      historyModal.classList.add("hidden");
+    } else if (!exportAllModal.classList.contains("hidden")) {
+      exportAllModal.classList.add("hidden");
+    }
+  }
+});
+
 // ========== 示例按钮 ==========
 
 document.querySelectorAll(".example-btn").forEach((btn) => {
@@ -424,6 +489,11 @@ generateBtn.addEventListener("click", async () => {
       return;
     }
 
+    // 如果已有流程图或页面结构，提醒用户将被覆盖
+    if (lastFlowchartData || lastWireframeData) {
+      if (!confirm("重新分析将清除已生成的流程图和页面结构说明，是否继续？")) return;
+    }
+
     // 切换到问题清单视图，重置终稿状态
     prdSection.classList.add("hidden");
     outputSection.classList.remove("hidden");
@@ -448,8 +518,8 @@ generateBtn.addEventListener("click", async () => {
 
     render(grouped);
 
-    localStorage.setItem(STORAGE_KEYS.INPUT, text);
-    localStorage.setItem(STORAGE_KEYS.RESULT, JSON.stringify(grouped));
+    safeSetItem(STORAGE_KEYS.INPUT, text);
+    safeSetItem(STORAGE_KEYS.RESULT, JSON.stringify(grouped));
     localStorage.removeItem(STORAGE_KEYS.ANSWERS);
     clearSession();
     saveToHistory(text, grouped);
@@ -479,6 +549,11 @@ generatePrdBtn.addEventListener("click", async () => {
       if (!confirm("您尚未回答任何澄清问题，生成的 PRD 可能不够完整。是否继续？")) return;
     }
     lastQAList = qaList;
+
+    // 如果已有流程图或页面结构，提醒用户将被覆盖
+    if (lastFlowchartData || lastWireframeData) {
+      if (!confirm("重新生成 PRD 将清除已生成的流程图和页面结构说明，是否继续？")) return;
+    }
 
     // 清空评审状态，恢复标题
     lastReviewMarkdown = "";
@@ -539,20 +614,13 @@ backToFinalPrdBtn.addEventListener("click", () => {
 });
 
 prdExportBtn.addEventListener("click", () => {
-  if (!lastPrdMarkdown) return;
+  if (!lastPrdMarkdown?.trim()) return;
   downloadMarkdown(lastPrdMarkdown, "PRD文档");
 });
 
 prdCopyBtn.addEventListener("click", () => {
-  if (!lastPrdMarkdown) return;
-  copyToClipboard(lastPrdMarkdown).then(() => {
-    prdCopyBtn.textContent = "已复制";
-    prdCopyBtn.classList.add("copied");
-    setTimeout(() => {
-      prdCopyBtn.textContent = "复制";
-      prdCopyBtn.classList.remove("copied");
-    }, 1500);
-  });
+  if (!lastPrdMarkdown?.trim()) return;
+  handleCopyButton(prdCopyBtn, lastPrdMarkdown, "复制");
 });
 
 // ========== 风险评审 ==========
@@ -565,7 +633,7 @@ prdReviewBtn.addEventListener("click", async () => {
       return;
     }
 
-    if (!lastPrdMarkdown) return;
+    if (!lastPrdMarkdown?.trim()) return;
 
     // 显示评审区域，清空内容
     reviewSection.classList.remove("hidden");
@@ -609,14 +677,7 @@ prdReviewBtn.addEventListener("click", async () => {
 
 reviewCopyBtn.addEventListener("click", () => {
   if (!lastReviewMarkdown) return;
-  copyToClipboard(lastReviewMarkdown).then(() => {
-    reviewCopyBtn.textContent = "已复制";
-    reviewCopyBtn.classList.add("copied");
-    setTimeout(() => {
-      reviewCopyBtn.textContent = "复制评审结果";
-      reviewCopyBtn.classList.remove("copied");
-    }, 1500);
-  });
+  handleCopyButton(reviewCopyBtn, lastReviewMarkdown, "复制评审结果");
 });
 
 reviewExportBtn.addEventListener("click", () => {
@@ -632,7 +693,7 @@ generateFinalPrdBtn.addEventListener("click", async () => {
       return;
     }
 
-    if (!lastPrdMarkdown || !lastReviewMarkdown) return;
+    if (!lastPrdMarkdown?.trim() || !lastReviewMarkdown?.trim()) return;
 
     // 收集用户对评审问题的回答
     const reviewAnswers = collectReviewAnswers();
@@ -699,14 +760,7 @@ copyBtn.addEventListener("click", () => {
     })
     .join("\n\n");
 
-  copyToClipboard(text).then(() => {
-    copyBtn.textContent = "已复制";
-    copyBtn.classList.add("copied");
-    setTimeout(() => {
-      copyBtn.textContent = "复制结果";
-      copyBtn.classList.remove("copied");
-    }, 1500);
-  });
+  handleCopyButton(copyBtn, text, "复制结果");
 });
 
 // ========== 导出澄清文档 ==========
@@ -744,7 +798,7 @@ function saveToHistory(inputText, result) {
 
   // 限制数量
   if (history.length > MAX_HISTORY) history.length = MAX_HISTORY;
-  localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
+  safeSetItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
 }
 
 function renderHistory() {
@@ -784,8 +838,8 @@ function loadHistoryItem(index) {
   lastInput = item.input;
   lastResult = item.result;
 
-  localStorage.setItem(STORAGE_KEYS.INPUT, item.input);
-  localStorage.setItem(STORAGE_KEYS.RESULT, JSON.stringify(item.result));
+  safeSetItem(STORAGE_KEYS.INPUT, item.input);
+  safeSetItem(STORAGE_KEYS.RESULT, JSON.stringify(item.result));
   localStorage.removeItem(STORAGE_KEYS.ANSWERS);
   clearSession();
 
@@ -816,7 +870,7 @@ historyList.addEventListener("click", (e) => {
     const idx = parseInt(deleteBtn.dataset.delete, 10);
     const history = getHistory();
     history.splice(idx, 1);
-    localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
+    safeSetItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
     renderHistory();
     return;
   }
@@ -881,7 +935,7 @@ generateFlowchartBtn.addEventListener("click", async () => {
  * 渲染流程图结果
  * @param {object} data - { needed, reason, charts }
  */
-function renderFlowcharts(data) {
+async function renderFlowcharts(data) {
   if (!data.needed || data.charts.length === 0) {
     flowchartContent.innerHTML = `
       <div class="flowchart-not-needed">
@@ -938,10 +992,12 @@ function renderFlowcharts(data) {
     securityLevel: "strict",
   });
 
-  // 逐个渲染，单个失败不影响其他图
-  flowchartContent.querySelectorAll(".mermaid").forEach(async (el, i) => {
+  // 逐个顺序渲染，单个失败不影响其他图
+  const mermaidEls = flowchartContent.querySelectorAll(".mermaid");
+  for (let i = 0; i < mermaidEls.length; i++) {
+    const el = mermaidEls[i];
     try {
-      const { svg } = await mermaid.render(`mermaid-svg-${Date.now()}-${i}`, el.textContent);
+      const { svg } = await mermaid.render(`mermaid-svg-${_mermaidIdCounter++}`, el.textContent);
       el.innerHTML = svg;
     } catch (err) {
       console.error(`Mermaid chart ${i} render failed:`, err);
@@ -952,7 +1008,7 @@ function renderFlowcharts(data) {
         if (details) details.open = true;
       }
     }
-  });
+  }
 }
 
 flowchartCopyBtn.addEventListener("click", () => {
@@ -962,14 +1018,7 @@ flowchartCopyBtn.addEventListener("click", () => {
     .map((chart) => `## ${chart.title}\n\n\`\`\`mermaid\n${chart.mermaid}\n\`\`\``)
     .join("\n\n---\n\n");
 
-  copyToClipboard(text).then(() => {
-    flowchartCopyBtn.textContent = "已复制";
-    flowchartCopyBtn.classList.add("copied");
-    setTimeout(() => {
-      flowchartCopyBtn.textContent = "复制 Mermaid 源码";
-      flowchartCopyBtn.classList.remove("copied");
-    }, 1500);
-  });
+  handleCopyButton(flowchartCopyBtn, text, "复制 Mermaid 源码");
 });
 
 // ========== 页面结构说明 ==========
@@ -1063,14 +1112,7 @@ wireframeCopyBtn.addEventListener("click", () => {
     })
     .join("\n\n---\n\n");
 
-  copyToClipboard(text).then(() => {
-    wireframeCopyBtn.textContent = "已复制";
-    wireframeCopyBtn.classList.add("copied");
-    setTimeout(() => {
-      wireframeCopyBtn.textContent = "复制结构说明";
-      wireframeCopyBtn.classList.remove("copied");
-    }, 1500);
-  });
+  handleCopyButton(wireframeCopyBtn, text, "复制结构说明");
 });
 
 // ========== 导出全套文档 ==========
@@ -1119,7 +1161,7 @@ exportAllModal.addEventListener("click", (e) => {
 });
 
 exportAllConfirmBtn.addEventListener("click", () => {
-  if (!lastPrdMarkdown) return;
+  if (!lastPrdMarkdown?.trim()) return;
 
   const md = generateFullDocument(
     lastPrdMarkdown,
@@ -1161,7 +1203,7 @@ exportAllConfirmBtn.addEventListener("click", () => {
   // — 恢复 PRD —
   const savedPrd = localStorage.getItem(STORAGE_KEYS.SESSION_PRD);
   const savedIsFinal = localStorage.getItem(STORAGE_KEYS.SESSION_IS_FINAL);
-  if (savedPrd) {
+  if (savedPrd && savedPrd.trim()) {
     lastPrdMarkdown = savedPrd;
     isFinalPrd = savedIsFinal === "1";
 
@@ -1175,11 +1217,14 @@ exportAllConfirmBtn.addEventListener("click", () => {
     if (isFinalPrd) {
       prdExtraActions.classList.remove("hidden");
     }
+  } else {
+    // PRD 数据无效，重置终稿标志
+    isFinalPrd = false;
   }
 
-  // — 恢复评审 —
+  // — 恢复评审（仅在非终版状态且 PRD 存在时恢复）—
   const savedReview = localStorage.getItem(STORAGE_KEYS.SESSION_REVIEW);
-  if (savedReview && savedPrd) {
+  if (savedReview && savedReview.trim() && lastPrdMarkdown && !isFinalPrd) {
     lastReviewMarkdown = savedReview;
     const cleanedMarkdown = stripReviewQuestionsBlock(savedReview);
     reviewContent.innerHTML = renderMarkdownToHTML(cleanedMarkdown);
@@ -1194,23 +1239,29 @@ exportAllConfirmBtn.addEventListener("click", () => {
     }
   }
 
-  // — 恢复流程图 —
+  // — 恢复流程图（需要 PRD 和终稿标志同时有效）—
   const savedFlowchart = localStorage.getItem(STORAGE_KEYS.SESSION_FLOWCHART);
-  if (savedFlowchart && isFinalPrd) {
+  if (savedFlowchart && savedFlowchart.trim() && isFinalPrd && lastPrdMarkdown) {
     try {
-      lastFlowchartData = JSON.parse(savedFlowchart);
-      flowchartSection.classList.remove("hidden");
-      renderFlowcharts(lastFlowchartData);
+      const parsedFlowchart = JSON.parse(savedFlowchart);
+      if (parsedFlowchart && typeof parsedFlowchart.needed !== "undefined") {
+        lastFlowchartData = parsedFlowchart;
+        flowchartSection.classList.remove("hidden");
+        renderFlowcharts(lastFlowchartData);
+      }
     } catch (_) {}
   }
 
-  // — 恢复页面结构 —
+  // — 恢复页面结构（需要 PRD 和终稿标志同时有效）—
   const savedWireframe = localStorage.getItem(STORAGE_KEYS.SESSION_WIREFRAME);
-  if (savedWireframe && isFinalPrd) {
+  if (savedWireframe && savedWireframe.trim() && isFinalPrd && lastPrdMarkdown) {
     try {
-      lastWireframeData = JSON.parse(savedWireframe);
-      wireframeSection.classList.remove("hidden");
-      renderWireframes(lastWireframeData);
+      const parsedWireframe = JSON.parse(savedWireframe);
+      if (parsedWireframe && typeof parsedWireframe.needed !== "undefined") {
+        lastWireframeData = parsedWireframe;
+        wireframeSection.classList.remove("hidden");
+        renderWireframes(lastWireframeData);
+      }
     } catch (_) {}
   }
 })();

@@ -33,7 +33,7 @@ function getApiKey() {
 }
 
 function setApiKey(key) {
-  localStorage.setItem(STORAGE_KEYS.API_KEY, key.trim());
+  safeSetItem(STORAGE_KEYS.API_KEY, key.trim());
 }
 
 function getProvider() {
@@ -41,7 +41,7 @@ function getProvider() {
 }
 
 function setProvider(provider) {
-  localStorage.setItem(STORAGE_KEYS.API_PROVIDER, provider);
+  safeSetItem(STORAGE_KEYS.API_PROVIDER, provider);
 }
 
 // ========== 通用 API 调用 ==========
@@ -168,6 +168,26 @@ async function streamAI(messages, options = {}) {
           }
         } catch (_) {
           // 忽略无法解析的行
+        }
+      }
+    }
+
+    // 处理 buffer 中残余的未完成行
+    if (buffer.trim()) {
+      const trimmed = buffer.trim();
+      if (trimmed.startsWith("data:")) {
+        const data = trimmed.slice(5).trim();
+        if (data && data !== "[DONE]") {
+          try {
+            const parsed = JSON.parse(data);
+            const delta = parsed.choices?.[0]?.delta?.content;
+            if (delta) {
+              accumulated += delta;
+              if (options.onChunk) {
+                options.onChunk(delta, accumulated);
+              }
+            }
+          } catch (_) {}
         }
       }
     }
@@ -369,9 +389,15 @@ function parseAIResponse(jsonText) {
     cleaned = cleaned.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
   }
 
-  const parsed = JSON.parse(cleaned);
-  const grouped = {};
+  let parsed;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch (e) {
+    const preview = cleaned.length > 120 ? cleaned.slice(0, 120) + "…" : cleaned;
+    throw new Error(`AI 返回内容无法解析为 JSON，请重试。\n响应片段：${preview}`);
+  }
 
+  const grouped = {};
   if (parsed.groups && Array.isArray(parsed.groups)) {
     for (const group of parsed.groups) {
       if (group.questions && group.questions.length > 0) {
@@ -394,7 +420,13 @@ function parseFlowchartResponse(jsonText) {
     cleaned = cleaned.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
   }
 
-  const parsed = JSON.parse(cleaned);
+  let parsed;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch (e) {
+    const preview = cleaned.length > 120 ? cleaned.slice(0, 120) + "…" : cleaned;
+    throw new Error(`流程图数据无法解析为 JSON，请重试。\n响应片段：${preview}`);
+  }
   return {
     needed: !!parsed.needed,
     reason: parsed.reason || "",
@@ -418,7 +450,13 @@ function parseWireframeResponse(jsonText) {
     cleaned = cleaned.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
   }
 
-  const parsed = JSON.parse(cleaned);
+  let parsed;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch (e) {
+    const preview = cleaned.length > 120 ? cleaned.slice(0, 120) + "…" : cleaned;
+    throw new Error(`页面结构数据无法解析为 JSON，请重试。\n响应片段：${preview}`);
+  }
   return {
     needed: !!parsed.needed,
     reason: parsed.reason || "",
