@@ -21,7 +21,7 @@
       <p class="subtitle">从一句模糊需求到可评审的 PRD，全流程 AI 自动化</p>
     </header>
 
-    <nav class="step-indicator" id="step-indicator">
+    <nav class="step-indicator" id="step-indicator" aria-label="工作流进度">
       <div class="step active" data-step="input">
         <span class="step-number">1</span>
         <span class="step-label">需求输入</span>
@@ -87,7 +87,7 @@
           <div class="spinner"></div>
           <p>AI 正在分析需求，请稍候…</p>
         </div>
-        <div id="output"></div>
+        <div id="output" aria-live="polite"></div>
         <button id="generate-prd-btn" class="prd-btn hidden">生成 PRD 文档</button>
         <button id="back-to-final-prd-btn" class="prd-btn hidden">查看最终 PRD 文档</button>
       </section>
@@ -106,7 +106,7 @@
           <div class="spinner"></div>
           <p>AI 正在生成 PRD 文档，请稍候…</p>
         </div>
-        <div id="prd-content" class="prd-content"></div>
+        <div id="prd-content" class="prd-content" aria-live="polite"></div>
         <div class="prd-extra-actions hidden" id="prd-extra-actions">
           <button id="generate-flowchart-btn" class="flowchart-btn">生成业务流程图</button>
           <button id="generate-wireframe-btn" class="wireframe-btn">生成页面结构说明</button>
@@ -123,7 +123,7 @@
               <button id="review-copy-btn" class="action-btn">复制评审结果</button>
             </div>
           </div>
-          <div id="review-content" class="review-content"></div>
+          <div id="review-content" class="review-content" aria-live="polite"></div>
           <div id="review-questions-section" class="review-questions-section hidden">
             <h3>需要您确认的问题</h3>
             <p class="review-questions-hint">以下问题需要您的决策，AI 才能给出合理的 MVP 方案。可留空跳过，AI 将按最简方案处理。</p>
@@ -250,7 +250,7 @@
     </div>
   </div>
 
-  <div id="toast-container" class="toast-container"></div>
+  <div id="toast-container" class="toast-container" role="alert" aria-live="assertive"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
   <script src="prompts.js"></script>

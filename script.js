@@ -179,8 +179,12 @@ function updateStepIndicator(currentStep) {
   const currentIndex = steps.indexOf(currentStep);
   document.querySelectorAll("#step-indicator .step").forEach((el, i) => {
     el.classList.remove("active", "completed");
+    el.removeAttribute("aria-current");
     if (i < currentIndex) el.classList.add("completed");
-    else if (i === currentIndex) el.classList.add("active");
+    else if (i === currentIndex) {
+      el.classList.add("active");
+      el.setAttribute("aria-current", "step");
+    }
   });
 }
 

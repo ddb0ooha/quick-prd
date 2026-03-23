@@ -1731,6 +1731,28 @@ textarea:focus {
   50% { opacity: 0.7; }
 }
 
+/* ========== 键盘焦点样式 ========== */
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+button:focus-visible {
+  box-shadow: 0 0 0 4px var(--color-primary-light);
+}
+
+/* ========== 减弱动效偏好 ========== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* ========== 隐藏（放在最后确保优先级最高） ========== */
 
 .hidden {
