@@ -184,6 +184,55 @@ function updateStepIndicator(currentStep) {
   });
 }
 
+// ========== 工作流切换过渡 ==========
+
+function transitionSection(hideEl, showEl) {
+  if (hideEl.classList.contains("section-fade")) {
+    hideEl.classList.add("fading-out");
+    setTimeout(() => {
+      hideEl.classList.add("hidden");
+      hideEl.classList.remove("fading-out");
+      showEl.classList.remove("hidden");
+      showEl.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 250);
+  } else {
+    hideEl.classList.add("hidden");
+    showEl.classList.remove("hidden");
+  }
+}
+
+// ========== 流式生成进度条 ==========
+
+let _streamingBar = null;
+
+function showStreamingBar() {
+  if (_streamingBar) return;
+  _streamingBar = document.createElement("div");
+  _streamingBar.className = "streaming-bar";
+  document.body.appendChild(_streamingBar);
+}
+
+function hideStreamingBar() {
+  if (_streamingBar) {
+    _streamingBar.remove();
+    _streamingBar = null;
+  }
+}
+
+// ========== 按钮生成态 ==========
+
+function setBtnGenerating(btn, text) {
+  btn.disabled = true;
+  btn.textContent = text;
+  btn.classList.add("btn-generating");
+}
+
+function clearBtnGenerating(btn, text) {
+  btn.disabled = false;
+  btn.textContent = text;
+  btn.classList.remove("btn-generating");
+}
+
 // ========== 区块展开动画 ==========
 
 function showSection(el) {
@@ -371,14 +420,10 @@ function showLoading() {
   output.innerHTML = "";
   exportBtn.classList.add("hidden");
   generatePrdBtn.classList.add("hidden");
-  generateBtn.disabled = true;
-  generateBtn.textContent = "分析中…";
 }
 
 function hideLoading() {
   loading.classList.add("hidden");
-  generateBtn.disabled = false;
-  generateBtn.textContent = "生成澄清问题";
 }
 
 function showError(error, container) {
@@ -427,6 +472,7 @@ function parseReviewQuestions(markdown) {
     const parsed = JSON.parse(match[1]);
     return Array.isArray(parsed.review_questions) ? parsed.review_questions : [];
   } catch (_) {
+    showToast("评审问题解析失败，已跳过", "warning");
     return [];
   }
 }
@@ -623,6 +669,8 @@ generateBtn.addEventListener("click", async () => {
     lastSequenceData = null;
     showLoading();
     isGenerating = true;
+    showStreamingBar();
+    setBtnGenerating(generateBtn, "分析中…");
 
     const loadingText = loading.querySelector("p");
     const rawJson = await analyzeWithAI(text, (charCount) => {
@@ -646,6 +694,8 @@ generateBtn.addEventListener("click", async () => {
     showError(error);
   } finally {
     isGenerating = false;
+    hideStreamingBar();
+    clearBtnGenerating(generateBtn, "生成澄清问题");
     hideLoading();
   }
 });
@@ -687,14 +737,13 @@ generatePrdBtn.addEventListener("click", async () => {
     prdSection.querySelector(".output-header h2").textContent = "PRD 文档预览";
 
     // 切换到 PRD 视图
-    outputSection.classList.add("hidden");
-    prdSection.classList.remove("hidden");
+    transitionSection(outputSection, prdSection);
     updateStepIndicator("prd");
     prdContent.innerHTML = "";
     prdLoading.classList.remove("hidden");
-    generatePrdBtn.disabled = true;
-    generatePrdBtn.textContent = "生成中…";
     isGenerating = true;
+    showStreamingBar();
+    setBtnGenerating(generatePrdBtn, "生成中…");
 
     // 流式渲染：每收到新内容就更新预览
     prdLoading.classList.add("hidden");
@@ -711,17 +760,16 @@ generatePrdBtn.addEventListener("click", async () => {
     showError(error, prdContent);
   } finally {
     isGenerating = false;
+    hideStreamingBar();
     prdLoading.classList.add("hidden");
-    generatePrdBtn.disabled = false;
-    generatePrdBtn.textContent = "生成 PRD 文档";
+    clearBtnGenerating(generatePrdBtn, "生成 PRD 文档");
   }
 });
 
 // ========== PRD 操作按钮 ==========
 
 prdBackBtn.addEventListener("click", () => {
-  prdSection.classList.add("hidden");
-  outputSection.classList.remove("hidden");
+  transitionSection(prdSection, outputSection);
   updateStepIndicator("clarify");
   if (isFinalPrd) {
     backToFinalPrdBtn.classList.remove("hidden");
@@ -729,8 +777,7 @@ prdBackBtn.addEventListener("click", () => {
 });
 
 backToFinalPrdBtn.addEventListener("click", () => {
-  outputSection.classList.add("hidden");
-  prdSection.classList.remove("hidden");
+  transitionSection(outputSection, prdSection);
   backToFinalPrdBtn.classList.add("hidden");
   updateStepIndicator(isFinalPrd ? "artifacts" : "prd");
 });
@@ -761,9 +808,9 @@ prdReviewBtn.addEventListener("click", async () => {
     reviewSection.classList.remove("hidden");
     reviewContent.innerHTML = "";
     reviewQuestionsSection.classList.add("hidden");
-    prdReviewBtn.disabled = true;
-    prdReviewBtn.textContent = "评审中…";
     isGenerating = true;
+    showStreamingBar();
+    setBtnGenerating(prdReviewBtn, "评审中…");
     updateStepIndicator("review");
 
     const markdown = await reviewPRDWithAI(
@@ -794,8 +841,8 @@ prdReviewBtn.addEventListener("click", async () => {
     showError(error, reviewContent);
   } finally {
     isGenerating = false;
-    prdReviewBtn.disabled = false;
-    prdReviewBtn.textContent = "风险评审";
+    hideStreamingBar();
+    clearBtnGenerating(prdReviewBtn, "风险评审");
   }
 });
 
@@ -825,9 +872,9 @@ generateFinalPrdBtn.addEventListener("click", async () => {
     // 隐藏评审区域，回到 PRD 内容区显示最终版
     reviewSection.classList.add("hidden");
     prdContent.innerHTML = "";
-    generateFinalPrdBtn.disabled = true;
-    generateFinalPrdBtn.textContent = "生成中…";
     isGenerating = true;
+    showStreamingBar();
+    setBtnGenerating(generateFinalPrdBtn, "生成中…");
 
     // 更新标题标识
     const prdTitle = prdSection.querySelector(".output-header h2");
@@ -864,8 +911,8 @@ generateFinalPrdBtn.addEventListener("click", async () => {
     showError(error, prdContent);
   } finally {
     isGenerating = false;
-    generateFinalPrdBtn.disabled = false;
-    generateFinalPrdBtn.textContent = "按照修改建议进行补充并生成最终 PRD";
+    hideStreamingBar();
+    clearBtnGenerating(generateFinalPrdBtn, "按照修改建议进行补充并生成最终 PRD");
   }
 });
 
@@ -1065,6 +1112,7 @@ historyList.addEventListener("click", (e) => {
 historyClearBtn.addEventListener("click", () => {
   if (!confirm("确定要清空所有历史记录吗？此操作不可恢复。")) return;
   localStorage.removeItem(STORAGE_KEYS.HISTORY);
+  _storageWarningShown = false;
   renderHistory();
 });
 
@@ -1083,9 +1131,9 @@ generateFlowchartBtn.addEventListener("click", async () => {
     flowchartSection.classList.remove("hidden");
     flowchartContent.innerHTML = "";
     flowchartLoading.classList.remove("hidden");
-    generateFlowchartBtn.disabled = true;
-    generateFlowchartBtn.textContent = "分析中…";
     isGenerating = true;
+    showStreamingBar();
+    setBtnGenerating(generateFlowchartBtn, "分析中…");
 
     const loadingText = flowchartLoading.querySelector("p");
     const rawJson = await generateFlowchartWithAI(lastPrdMarkdown, (charCount) => {
@@ -1107,8 +1155,8 @@ generateFlowchartBtn.addEventListener("click", async () => {
     showError(error, flowchartContent);
   } finally {
     isGenerating = false;
-    generateFlowchartBtn.disabled = false;
-    generateFlowchartBtn.textContent = "生成业务流程图";
+    hideStreamingBar();
+    clearBtnGenerating(generateFlowchartBtn, "生成业务流程图");
   }
 });
 
@@ -1188,6 +1236,7 @@ async function renderFlowcharts(data) {
         const details = card.querySelector(".flowchart-source");
         if (details) details.open = true;
       }
+      showToast("流程图渲染失败，已展开源码供参考", "warning");
     }
   }
 }
@@ -1216,9 +1265,9 @@ generateWireframeBtn.addEventListener("click", async () => {
     wireframeSection.classList.remove("hidden");
     wireframeContent.innerHTML = "";
     wireframeLoading.classList.remove("hidden");
-    generateWireframeBtn.disabled = true;
-    generateWireframeBtn.textContent = "分析中…";
     isGenerating = true;
+    showStreamingBar();
+    setBtnGenerating(generateWireframeBtn, "分析中…");
 
     const loadingText = wireframeLoading.querySelector("p");
     const rawJson = await generateWireframeWithAI(lastPrdMarkdown, (charCount) => {
@@ -1239,8 +1288,8 @@ generateWireframeBtn.addEventListener("click", async () => {
     showError(error, wireframeContent);
   } finally {
     isGenerating = false;
-    generateWireframeBtn.disabled = false;
-    generateWireframeBtn.textContent = "生成页面结构说明";
+    hideStreamingBar();
+    clearBtnGenerating(generateWireframeBtn, "生成页面结构说明");
   }
 });
 
@@ -1311,9 +1360,9 @@ generateSequenceBtn.addEventListener("click", async () => {
     sequenceSection.classList.remove("hidden");
     sequenceContent.innerHTML = "";
     sequenceLoading.classList.remove("hidden");
-    generateSequenceBtn.disabled = true;
-    generateSequenceBtn.textContent = "分析中…";
     isGenerating = true;
+    showStreamingBar();
+    setBtnGenerating(generateSequenceBtn, "分析中…");
 
     const loadingText = sequenceLoading.querySelector("p");
     const rawJson = await generateSequenceWithAI(lastPrdMarkdown, (charCount) => {
@@ -1335,8 +1384,8 @@ generateSequenceBtn.addEventListener("click", async () => {
     showError(error, sequenceContent);
   } finally {
     isGenerating = false;
-    generateSequenceBtn.disabled = false;
-    generateSequenceBtn.textContent = "生成时序图";
+    hideStreamingBar();
+    clearBtnGenerating(generateSequenceBtn, "生成时序图");
   }
 });
 
@@ -1412,6 +1461,7 @@ async function renderSequenceDiagrams(data) {
         const details = card.querySelector(".sequence-source");
         if (details) details.open = true;
       }
+      showToast("时序图渲染失败，已展开源码供参考", "warning");
     }
   }
 }
