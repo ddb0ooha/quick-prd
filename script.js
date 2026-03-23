@@ -333,7 +333,7 @@ function render(grouped) {
           const safeGroup = escapeHTML(groupName);
           return `<li>
             <span class="question-text">${safeQ}</span>
-            <textarea class="answer-input" id="${id}" data-group="${safeGroup}" data-question="${safeQ}" placeholder="填写补充信息（可留空）" rows="1"></textarea>
+            <textarea class="input-base answer-input" id="${id}" data-group="${safeGroup}" data-question="${safeQ}" placeholder="填写补充信息（可留空）" rows="1"></textarea>
           </li>`;
         })
         .join("");
@@ -453,7 +453,7 @@ function renderReviewQuestions(questions) {
       return `<div class="review-question-item">
         <div class="review-question-text">${safeQ}</div>
         <div class="review-question-context">${safeCtx}</div>
-        <textarea class="review-question-input" id="review-answer-${i}" data-question="${safeQ}" data-context="${safeCtx}" placeholder="填写您的决策（可留空，AI 将按最简方案处理）" rows="2"></textarea>
+        <textarea class="input-base review-question-input" id="review-answer-${i}" data-question="${safeQ}" data-context="${safeCtx}" placeholder="填写您的决策（可留空，AI 将按最简方案处理）" rows="2"></textarea>
       </div>`;
     })
     .join("");

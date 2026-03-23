@@ -11,10 +11,12 @@
   /* 语义色 */
   --color-success: #48BB78;
   --color-success-hover: #38A169;
+  --color-success-active: #2F855A;
   --color-success-light: #F0FFF4;
   --color-success-disabled: #9AE6B4;
   --color-warning: #ED8936;
   --color-warning-hover: #DD6B20;
+  --color-warning-active: #C05621;
   --color-warning-light: #FFFAF0;
   --color-warning-border: #FEEBC8;
   --color-danger: #F56565;
@@ -44,7 +46,7 @@
   /* 中性色 */
   --color-text-primary: #1A202C;
   --color-text-secondary: #4A5568;
-  --color-text-muted: #A0AEC0;
+  --color-text-muted: #718096;
   --color-text-placeholder: #CBD5E0;
   --color-border: #E2E8F0;
   --color-border-light: #EDF2F7;
@@ -70,8 +72,8 @@
   --font-size-xs: 12px;
   --font-size-sm: 13px;
   --font-size-base: 14px;
-  --font-size-md: 15px;
-  --font-size-lg: 17px;
+  --font-size-md: 16px;
+  --font-size-lg: 18px;
   --font-size-xl: 20px;
   --font-size-2xl: 24px;
   --line-height-tight: 1.4;
@@ -158,7 +160,7 @@ header h1 {
   height: 36px;
   margin-top: 0;
   padding: 0;
-  font-size: 16px;
+  font-size: var(--font-size-md);
   background: transparent;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -199,7 +201,7 @@ button {
   width: 100%;
   margin-top: var(--space-4);
   padding: var(--space-3);
-  font-size: 16px;
+  font-size: var(--font-size-md);
   font-weight: 600;
 }
 
@@ -231,7 +233,7 @@ button {
 }
 
 .btn-success:active {
-  background: #2F855A;
+  background: var(--color-success-active);
 }
 
 .btn-success:disabled {
@@ -249,7 +251,7 @@ button {
 }
 
 .btn-warning:active {
-  background: #C05621;
+  background: var(--color-warning-active);
 }
 
 .btn-warning:disabled {
@@ -338,13 +340,7 @@ button {
 
 /* ========== 输入区 ========== */
 
-.input-section {
-  background: var(--color-bg-card);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border-light);
-  padding: var(--space-8);
-  box-shadow: var(--shadow-sm);
-}
+/* .input-section 继承 .card 基类 */
 
 .input-toolbar {
   display: flex;
@@ -452,7 +448,7 @@ textarea:focus {
 }
 
 .output-header h2 {
-  font-size: 18px;
+  font-size: var(--font-size-lg);
   font-weight: 600;
   color: var(--color-text-primary);
 }
@@ -585,28 +581,7 @@ textarea:focus {
   margin-bottom: 0;
 }
 
-/* 答案输入框 */
-.answer-input {
-  width: 100%;
-  padding: var(--space-2) 10px;
-  font-size: var(--font-size-sm);
-  font-family: inherit;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  resize: vertical;
-  min-height: 36px;
-  overflow: hidden;
-  transition: border-color var(--transition-fast);
-}
-
-.answer-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-.answer-input::placeholder {
-  color: var(--color-text-placeholder);
-}
+/* 答案输入框 — 继承 .input-base，此处仅作标记 */
 
 /* 生成 PRD 按钮 */
 .prd-btn {
@@ -614,7 +589,7 @@ textarea:focus {
   width: 100%;
   margin-top: var(--space-5);
   padding: var(--space-3);
-  font-size: 16px;
+  font-size: var(--font-size-md);
   font-weight: 600;
   color: #fff;
   background: var(--color-success);
@@ -627,7 +602,7 @@ textarea:focus {
 }
 
 .prd-btn:active {
-  background: #2F855A;
+  background: var(--color-success-active);
 }
 
 .prd-btn:disabled {
@@ -698,7 +673,7 @@ textarea:focus {
 }
 
 .modal h3 {
-  font-size: 18px;
+  font-size: var(--font-size-lg);
   font-weight: 600;
   margin-bottom: var(--space-4);
 }
@@ -807,7 +782,7 @@ textarea:focus {
 }
 
 .prd-content h1 {
-  font-size: 22px;
+  font-size: var(--font-size-2xl);
   font-weight: 700;
   margin-bottom: var(--space-4);
   padding-bottom: 10px;
@@ -888,7 +863,7 @@ textarea:focus {
   background: var(--color-bg-code);
   color: var(--color-text-code);
   border-radius: var(--radius-md);
-  padding: 14px 18px;
+  padding: var(--space-3) var(--space-5);
   overflow-x: auto;
   margin: var(--space-3) 0;
   font-size: var(--font-size-sm);
@@ -1043,15 +1018,6 @@ textarea:focus {
   margin: var(--space-10) 0 var(--space-8);
 }
 
-/* 保留旧类名兼容，映射到统一样式 */
-.review-divider,
-.flowchart-divider,
-.wireframe-divider,
-.sequence-divider {
-  border: none;
-  border-top: 1px solid var(--color-border);
-  margin: var(--space-10) 0 var(--space-8);
-}
 
 /* ========== 评审区域 ========== */
 
@@ -1098,27 +1064,7 @@ textarea:focus {
   margin-bottom: var(--space-2);
 }
 
-.review-question-input {
-  width: 100%;
-  padding: var(--space-2) 10px;
-  font-size: var(--font-size-sm);
-  font-family: inherit;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  resize: vertical;
-  min-height: 36px;
-  overflow: hidden;
-  transition: border-color var(--transition-fast);
-}
-
-.review-question-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-.review-question-input::placeholder {
-  color: var(--color-text-placeholder);
-}
+/* 评审问题输入框 — 继承 .input-base，此处仅作标记 */
 
 /* 生成最终 PRD 按钮 */
 .final-prd-btn {
@@ -1126,7 +1072,7 @@ textarea:focus {
   width: 100%;
   margin-top: var(--space-5);
   padding: var(--space-3);
-  font-size: 16px;
+  font-size: var(--font-size-md);
   font-weight: 600;
   color: #fff;
   background: var(--color-success);
@@ -1139,7 +1085,7 @@ textarea:focus {
 }
 
 .final-prd-btn:active {
-  background: #2F855A;
+  background: var(--color-success-active);
 }
 
 .final-prd-btn:disabled {
@@ -1302,7 +1248,7 @@ textarea:focus {
   background: var(--color-bg-code);
   color: var(--color-text-code);
   border-radius: var(--radius-md);
-  padding: 14px 18px;
+  padding: var(--space-3) var(--space-5);
   overflow-x: auto;
   margin-top: var(--space-2);
   font-size: var(--font-size-sm);
@@ -1504,7 +1450,7 @@ textarea:focus {
   background: var(--color-bg-code);
   color: var(--color-text-code);
   border-radius: var(--radius-md);
-  padding: 14px 18px;
+  padding: var(--space-3) var(--space-5);
   overflow-x: auto;
   margin-top: var(--space-2);
   font-size: var(--font-size-sm);
@@ -1703,7 +1649,7 @@ textarea:focus {
   width: 100%;
   margin-top: var(--space-4);
   padding: var(--space-3);
-  font-size: 16px;
+  font-size: var(--font-size-md);
   font-weight: 600;
   color: #fff;
   background: var(--color-primary);
