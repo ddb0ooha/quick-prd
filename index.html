@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>QuickPRD</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,20 +14,58 @@
     <header>
       <div class="header-row">
         <h1>QuickPRD</h1>
+        <button id="new-session-btn" class="icon-btn" title="新建会话">📄</button>
         <button id="history-btn" class="icon-btn" title="历史记录">📋</button>
         <button id="settings-btn" class="icon-btn" title="设置 API Key">⚙️</button>
       </div>
       <p class="subtitle">从一句模糊需求到可评审的 PRD，全流程 AI 自动化</p>
     </header>
 
+    <nav class="step-indicator" id="step-indicator">
+      <div class="step active" data-step="input">
+        <span class="step-number">1</span>
+        <span class="step-label">需求输入</span>
+      </div>
+      <div class="step-connector"></div>
+      <div class="step" data-step="clarify">
+        <span class="step-number">2</span>
+        <span class="step-label">需求澄清</span>
+      </div>
+      <div class="step-connector"></div>
+      <div class="step" data-step="prd">
+        <span class="step-number">3</span>
+        <span class="step-label">PRD 生成</span>
+      </div>
+      <div class="step-connector"></div>
+      <div class="step" data-step="review">
+        <span class="step-number">4</span>
+        <span class="step-label">评审优化</span>
+      </div>
+      <div class="step-connector"></div>
+      <div class="step" data-step="artifacts">
+        <span class="step-number">5</span>
+        <span class="step-label">产出物</span>
+      </div>
+    </nav>
+
     <main>
       <section class="input-section">
-        <label for="requirement">请描述你的需求：</label>
-        <div class="examples">
-          <span class="examples-label">试试示例：</span>
-          <button type="button" class="example-btn" data-example="新人弹窗送券">新人弹窗送券</button>
-          <button type="button" class="example-btn" data-example="订单取消流程">订单取消流程</button>
-          <button type="button" class="example-btn" data-example="会员签到奖励">会员签到奖励</button>
+        <div class="input-toolbar">
+          <div class="examples">
+            <span class="examples-label">示例：</span>
+            <button type="button" class="example-btn" data-example="新人弹窗送券">新人弹窗送券</button>
+            <button type="button" class="example-btn" data-example="订单取消流程">订单取消流程</button>
+            <button type="button" class="example-btn" data-example="会员签到奖励">会员签到奖励</button>
+          </div>
+          <div class="template-selector">
+            <label class="template-label" for="template-select">类型：</label>
+            <select id="template-select" class="template-select">
+              <option value="general">通用需求</option>
+              <option value="marketing">营销活动</option>
+              <option value="ecommerce">电商交易</option>
+              <option value="admin">后台管理</option>
+            </select>
+          </div>
         </div>
         <textarea
           id="requirement"
@@ -69,6 +110,7 @@
         <div class="prd-extra-actions hidden" id="prd-extra-actions">
           <button id="generate-flowchart-btn" class="flowchart-btn">生成业务流程图</button>
           <button id="generate-wireframe-btn" class="wireframe-btn">生成页面结构说明</button>
+          <button id="generate-sequence-btn" class="sequence-btn">生成时序图</button>
           <button id="export-all-btn" class="export-all-btn">导出全套文档</button>
         </div>
 
@@ -119,6 +161,21 @@
           </div>
           <div id="wireframe-content" class="wireframe-content"></div>
         </div>
+
+        <div id="sequence-section" class="sequence-section hidden">
+          <hr class="sequence-divider">
+          <div class="output-header">
+            <h2>时序图</h2>
+            <div class="output-actions">
+              <button id="sequence-copy-btn" class="action-btn">复制 Mermaid 源码</button>
+            </div>
+          </div>
+          <div id="sequence-loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>AI 正在分析系统交互并生成时序图…</p>
+          </div>
+          <div id="sequence-content" class="sequence-content"></div>
+        </div>
       </section>
     </main>
   </div>
@@ -157,6 +214,10 @@
           <input type="checkbox" id="export-include-wireframe" checked>
           <span>页面结构说明</span>
         </label>
+        <label class="checkbox-label" id="export-sequence-option">
+          <input type="checkbox" id="export-include-sequence" checked>
+          <span>时序图</span>
+        </label>
       </div>
       <div class="modal-actions">
         <button id="export-all-cancel-btn" class="btn-secondary">取消</button>
@@ -188,6 +249,8 @@
       </div>
     </div>
   </div>
+
+  <div id="toast-container" class="toast-container"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
   <script src="prompts.js"></script>

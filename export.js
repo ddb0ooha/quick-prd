@@ -201,10 +201,11 @@ function renderMarkdownToHTML(md) {
  * @param {string} prdMarkdown - 最终版 PRD Markdown
  * @param {object|null} flowchartData - 流程图数据 { needed, charts: [{title, mermaid}] }
  * @param {object|null} wireframeData - 页面结构数据 { needed, pages: [{name, entry, structure}] }
- * @param {object} options - { includeFlowchart: boolean, includeWireframe: boolean }
+ * @param {object|null} sequenceData - 时序图数据 { needed, diagrams: [{title, mermaid}] }
+ * @param {object} options - { includeFlowchart, includeWireframe, includeSequence }
  * @returns {string} - 完整 Markdown
  */
-function generateFullDocument(prdMarkdown, flowchartData, wireframeData, options) {
+function generateFullDocument(prdMarkdown, flowchartData, wireframeData, sequenceData, options) {
   const now = new Date();
   const dateStr = now.toLocaleDateString("zh-CN", {
     year: "numeric",
@@ -237,6 +238,16 @@ function generateFullDocument(prdMarkdown, flowchartData, wireframeData, options
       md += `### ${page.name}\n\n`;
       if (page.entry) md += `**入口**：${page.entry}\n\n`;
       md += page.structure + "\n\n";
+    });
+  }
+
+  // 时序图
+  if (options.includeSequence && sequenceData && sequenceData.needed && sequenceData.diagrams.length > 0) {
+    md += `---\n\n`;
+    md += `## 时序图\n\n`;
+    sequenceData.diagrams.forEach((diagram) => {
+      md += `### ${diagram.title}\n\n`;
+      md += `\`\`\`mermaid\n${diagram.mermaid}\n\`\`\`\n\n`;
     });
   }
 

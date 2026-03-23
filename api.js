@@ -206,10 +206,12 @@ async function streamAI(messages, options = {}) {
  * @param {function} [onProgress] - 进度回调，接收已接收字符数
  * @returns {Promise<string>} - AI 返回的原始 JSON 文本
  */
-async function analyzeWithAI(requirementText, onProgress) {
+async function analyzeWithAI(requirementText, onProgress, templateKey) {
+  const patch = getTemplatePatch(templateKey);
+  const systemPrompt = getPromptWithTemplate(SYSTEM_PROMPT, patch.analyzePatch);
   return streamAI(
     [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: systemPrompt },
       { role: "user", content: requirementText },
     ],
     {
@@ -230,7 +232,9 @@ async function analyzeWithAI(requirementText, onProgress) {
  * @param {function} [onChunk] - 流式回调，接收 (delta, accumulated)
  * @returns {Promise<string>} - 完整 Markdown 文本
  */
-async function generatePRDWithAI(originalText, qaList, onChunk) {
+async function generatePRDWithAI(originalText, qaList, onChunk, templateKey) {
+  const patch = getTemplatePatch(templateKey);
+  const systemPrompt = getPromptWithTemplate(PRD_SYSTEM_PROMPT, patch.prdPatch);
   let userContent = `## 原始需求描述\n\n${originalText}\n\n## 澄清问答\n\n`;
   for (const qa of qaList) {
     userContent += `**[${qa.group}] ${qa.question}**\n`;
@@ -241,7 +245,7 @@ async function generatePRDWithAI(originalText, qaList, onChunk) {
 
   return streamAI(
     [
-      { role: "system", content: PRD_SYSTEM_PROMPT },
+      { role: "system", content: systemPrompt },
       { role: "user", content: userContent },
     ],
     { onChunk }
@@ -258,7 +262,9 @@ async function generatePRDWithAI(originalText, qaList, onChunk) {
  * @param {function} [onChunk] - 流式回调，接收 (delta, accumulated)
  * @returns {Promise<string>} - 完整评审 Markdown 文本
  */
-async function reviewPRDWithAI(originalText, qaList, prdMarkdown, onChunk) {
+async function reviewPRDWithAI(originalText, qaList, prdMarkdown, onChunk, templateKey) {
+  const patch = getTemplatePatch(templateKey);
+  const systemPrompt = getPromptWithTemplate(REVIEW_SYSTEM_PROMPT, patch.reviewPatch);
   let userContent = `## 原始需求描述\n\n${originalText}\n\n`;
 
   userContent += `## 澄清问答\n\n`;
@@ -273,7 +279,7 @@ async function reviewPRDWithAI(originalText, qaList, prdMarkdown, onChunk) {
 
   return streamAI(
     [
-      { role: "system", content: REVIEW_SYSTEM_PROMPT },
+      { role: "system", content: systemPrompt },
       { role: "user", content: userContent },
     ],
     { onChunk }
@@ -375,6 +381,31 @@ async function generateWireframeWithAI(finalPrdMarkdown, onProgress) {
   );
 }
 
+// ========== 时序图生成（流式） ==========
+
+/**
+ * 根据最终版 PRD 生成时序图（流式传输，完成后返回 JSON）
+ * @param {string} finalPrdMarkdown - 最终版 PRD Markdown
+ * @param {function} [onProgress] - 进度回调，接收已接收字符数
+ * @returns {Promise<string>} - AI 返回的 JSON 文本
+ */
+async function generateSequenceWithAI(finalPrdMarkdown, onProgress) {
+  const userContent = `## 最终版 PRD\n\n${finalPrdMarkdown}`;
+
+  return streamAI(
+    [
+      { role: "system", content: SEQUENCE_SYSTEM_PROMPT },
+      { role: "user", content: userContent },
+    ],
+    {
+      responseFormat: { type: "json_object" },
+      onChunk: onProgress
+        ? (_delta, full) => onProgress(full.length)
+        : undefined,
+    }
+  );
+}
+
 // ========== 响应解析 ==========
 
 /**
@@ -464,6 +495,36 @@ function parseWireframeResponse(jsonText) {
       ? parsed.pages.map((p) => ({
           ...p,
           structure: (p.structure || "").replace(/\\n/g, "\n"),
+        }))
+      : [],
+  };
+}
+
+/**
+ * 解析时序图 AI 响应
+ * @param {string} jsonText - AI 返回的 JSON
+ * @returns {object} - { needed, reason, diagrams: [{title, why, mermaid}] }
+ */
+function parseSequenceResponse(jsonText) {
+  let cleaned = jsonText.trim();
+  if (cleaned.startsWith("```")) {
+    cleaned = cleaned.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch (e) {
+    const preview = cleaned.length > 120 ? cleaned.slice(0, 120) + "…" : cleaned;
+    throw new Error(`时序图数据无法解析为 JSON，请重试。\n响应片段：${preview}`);
+  }
+  return {
+    needed: !!parsed.needed,
+    reason: parsed.reason || "",
+    diagrams: Array.isArray(parsed.diagrams)
+      ? parsed.diagrams.map((d) => ({
+          ...d,
+          mermaid: (d.mermaid || "").replace(/\\n/g, "\n"),
         }))
       : [],
   };

@@ -54,6 +54,13 @@ const wireframeLoading = document.getElementById("wireframe-loading");
 const wireframeContent = document.getElementById("wireframe-content");
 const wireframeCopyBtn = document.getElementById("wireframe-copy-btn");
 
+// 时序图相关
+const generateSequenceBtn = document.getElementById("generate-sequence-btn");
+const sequenceSection = document.getElementById("sequence-section");
+const sequenceLoading = document.getElementById("sequence-loading");
+const sequenceContent = document.getElementById("sequence-content");
+const sequenceCopyBtn = document.getElementById("sequence-copy-btn");
+
 // 导出全套文档相关
 const exportAllBtn = document.getElementById("export-all-btn");
 const exportAllModal = document.getElementById("export-all-modal");
@@ -63,6 +70,11 @@ const exportIncludeFlowchart = document.getElementById("export-include-flowchart
 const exportIncludeWireframe = document.getElementById("export-include-wireframe");
 const exportFlowchartOption = document.getElementById("export-flowchart-option");
 const exportWireframeOption = document.getElementById("export-wireframe-option");
+const exportIncludeSequence = document.getElementById("export-include-sequence");
+const exportSequenceOption = document.getElementById("export-sequence-option");
+
+// 新建会话
+const newSessionBtn = document.getElementById("new-session-btn");
 
 // 历史记录相关
 const historyBtn = document.getElementById("history-btn");
@@ -117,8 +129,86 @@ function safeSetItem(key, value) {
     console.error("localStorage 写入失败:", e);
     if (!_storageWarningShown) {
       _storageWarningShown = true;
-      alert("本地存储空间不足，部分数据可能无法保存。请清理历史记录后重试。");
+      showToast("本地存储空间不足，部分数据可能无法保存。请清理历史记录后重试。", "warning", 4000);
     }
+  }
+}
+
+// ========== Toast 通知 ==========
+
+function showToast(message, type = "success", duration = 2500) {
+  const container = document.getElementById("toast-container");
+  const el = document.createElement("div");
+  el.className = `toast-item toast-${type}`;
+  el.textContent = message;
+  container.appendChild(el);
+  setTimeout(() => {
+    el.classList.add("toast-out");
+    el.addEventListener("animationend", () => el.remove());
+  }, duration);
+}
+
+// ========== 模态框动画 ==========
+
+function openModal(overlay) {
+  overlay.classList.remove("hidden");
+  // 强制 reflow 以触发过渡
+  void overlay.offsetHeight;
+  overlay.classList.add("visible");
+}
+
+function closeModal(overlay) {
+  overlay.classList.remove("visible");
+  const onEnd = () => {
+    overlay.classList.add("hidden");
+    overlay.removeEventListener("transitionend", onEnd);
+  };
+  overlay.addEventListener("transitionend", onEnd);
+  // 兜底：确保 hidden 一定被添加
+  setTimeout(() => {
+    if (!overlay.classList.contains("hidden")) {
+      overlay.classList.add("hidden");
+    }
+  }, 400);
+}
+
+// ========== 步骤指示器 ==========
+
+function updateStepIndicator(currentStep) {
+  const steps = ["input", "clarify", "prd", "review", "artifacts"];
+  const currentIndex = steps.indexOf(currentStep);
+  document.querySelectorAll("#step-indicator .step").forEach((el, i) => {
+    el.classList.remove("active", "completed");
+    if (i < currentIndex) el.classList.add("completed");
+    else if (i === currentIndex) el.classList.add("active");
+  });
+}
+
+// ========== 区块展开动画 ==========
+
+function showSection(el) {
+  el.classList.remove("hidden");
+  if (el.classList.contains("section-animate")) {
+    requestAnimationFrame(() => {
+      el.classList.add("expanded");
+    });
+  }
+}
+
+function hideSection(el) {
+  if (el.classList.contains("section-animate")) {
+    el.classList.remove("expanded");
+    el.addEventListener("transitionend", function handler() {
+      el.classList.add("hidden");
+      el.removeEventListener("transitionend", handler);
+    });
+    setTimeout(() => {
+      if (!el.classList.contains("hidden")) {
+        el.classList.add("hidden");
+      }
+    }, 500);
+  } else {
+    el.classList.add("hidden");
   }
 }
 
@@ -151,6 +241,8 @@ let isFinalPrd = false;
 let isGenerating = false;
 let lastFlowchartData = null;
 let lastWireframeData = null;
+let lastSequenceData = null;
+let currentTemplate = "general";
 let _mermaidIdCounter = 0;
 
 // ========== 答案持久化 ==========
@@ -187,6 +279,8 @@ function saveSession() {
   safeSetItem(STORAGE_KEYS.SESSION_IS_FINAL, isFinalPrd ? "1" : "");
   safeSetItem(STORAGE_KEYS.SESSION_FLOWCHART, lastFlowchartData ? JSON.stringify(lastFlowchartData) : "");
   safeSetItem(STORAGE_KEYS.SESSION_WIREFRAME, lastWireframeData ? JSON.stringify(lastWireframeData) : "");
+  safeSetItem(STORAGE_KEYS.SESSION_SEQUENCE, lastSequenceData ? JSON.stringify(lastSequenceData) : "");
+  safeSetItem(STORAGE_KEYS.SESSION_TEMPLATE, currentTemplate);
 }
 
 function saveReviewQuestions(questions) {
@@ -201,6 +295,8 @@ function clearSession() {
   localStorage.removeItem(STORAGE_KEYS.SESSION_IS_FINAL);
   localStorage.removeItem(STORAGE_KEYS.SESSION_FLOWCHART);
   localStorage.removeItem(STORAGE_KEYS.SESSION_WIREFRAME);
+  localStorage.removeItem(STORAGE_KEYS.SESSION_SEQUENCE);
+  localStorage.removeItem(STORAGE_KEYS.SESSION_TEMPLATE);
 }
 
 // ========== 示例需求 ==========
@@ -263,6 +359,14 @@ function render(grouped) {
 }
 
 function showLoading() {
+  loading.innerHTML = `
+    <div class="skeleton-block">
+      <div class="skeleton-line"></div>
+      <div class="skeleton-line"></div>
+      <div class="skeleton-line"></div>
+      <div class="skeleton-line"></div>
+      <div class="skeleton-line"></div>
+    </div>`;
   loading.classList.remove("hidden");
   output.innerHTML = "";
   exportBtn.classList.add("hidden");
@@ -409,12 +513,12 @@ function openSettings() {
     .map((v) => `<option value="${v}"${v === currentVersion ? " selected" : ""}>${v}</option>`)
     .join("");
 
-  settingsModal.classList.remove("hidden");
+  openModal(settingsModal);
   apiKeyInput.focus();
 }
 
 function closeSettings() {
-  settingsModal.classList.add("hidden");
+  closeModal(settingsModal);
 }
 
 settingsBtn.addEventListener("click", openSettings);
@@ -433,16 +537,19 @@ settingsModal.addEventListener("click", (e) => {
   if (e.target === settingsModal) closeSettings();
 });
 
+// 确保 settings modal 关闭时不会同时触发 closeModal 检测逻辑
+// (closeSettings 已内部调用 closeModal)
+
 // ========== ESC 关闭模态框 ==========
 
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
-    if (!settingsModal.classList.contains("hidden")) {
+    if (settingsModal.classList.contains("visible")) {
       closeSettings();
-    } else if (!historyModal.classList.contains("hidden")) {
-      historyModal.classList.add("hidden");
-    } else if (!exportAllModal.classList.contains("hidden")) {
-      exportAllModal.classList.add("hidden");
+    } else if (historyModal.classList.contains("visible")) {
+      closeModal(historyModal);
+    } else if (exportAllModal.classList.contains("visible")) {
+      closeModal(exportAllModal);
     }
   }
 });
@@ -455,6 +562,14 @@ document.querySelectorAll(".example-btn").forEach((btn) => {
     textarea.value = examples[key] || key;
     textarea.focus();
   });
+});
+
+// ========== 模板选择器 ==========
+
+const templateSelect = document.getElementById("template-select");
+templateSelect.addEventListener("change", () => {
+  currentTemplate = templateSelect.value;
+  safeSetItem(STORAGE_KEYS.SESSION_TEMPLATE, currentTemplate);
 });
 
 // ========== 快捷键 ==========
@@ -473,8 +588,7 @@ generateBtn.addEventListener("click", async () => {
   const text = textarea.value.trim();
 
   if (!text) {
-    outputSection.classList.remove("hidden");
-    output.innerHTML = '<p class="toast">请先输入需求描述</p>';
+    showToast("请先输入需求描述", "warning");
     return;
   }
 
@@ -489,28 +603,31 @@ generateBtn.addEventListener("click", async () => {
       return;
     }
 
-    // 如果已有流程图或页面结构，提醒用户将被覆盖
-    if (lastFlowchartData || lastWireframeData) {
-      if (!confirm("重新分析将清除已生成的流程图和页面结构说明，是否继续？")) return;
+    // 如果已有流程图或页面结构或时序图，提醒用户将被覆盖
+    if (lastFlowchartData || lastWireframeData || lastSequenceData) {
+      if (!confirm("重新分析将清除已生成的流程图、页面结构说明和时序图，是否继续？")) return;
     }
 
     // 切换到问题清单视图，重置终稿状态
     prdSection.classList.add("hidden");
     outputSection.classList.remove("hidden");
     isFinalPrd = false;
+    updateStepIndicator("clarify");
     backToFinalPrdBtn.classList.add("hidden");
     prdExtraActions.classList.add("hidden");
     flowchartSection.classList.add("hidden");
     wireframeSection.classList.add("hidden");
+    sequenceSection.classList.add("hidden");
     lastFlowchartData = null;
     lastWireframeData = null;
+    lastSequenceData = null;
     showLoading();
     isGenerating = true;
 
     const loadingText = loading.querySelector("p");
     const rawJson = await analyzeWithAI(text, (charCount) => {
       loadingText.textContent = `AI 正在分析需求，已接收 ${charCount} 字…`;
-    });
+    }, currentTemplate);
     const grouped = parseAIResponse(rawJson);
 
     lastResult = grouped;
@@ -550,9 +667,9 @@ generatePrdBtn.addEventListener("click", async () => {
     }
     lastQAList = qaList;
 
-    // 如果已有流程图或页面结构，提醒用户将被覆盖
-    if (lastFlowchartData || lastWireframeData) {
-      if (!confirm("重新生成 PRD 将清除已生成的流程图和页面结构说明，是否继续？")) return;
+    // 如果已有流程图或页面结构或时序图，提醒用户将被覆盖
+    if (lastFlowchartData || lastWireframeData || lastSequenceData) {
+      if (!confirm("重新生成 PRD 将清除已生成的流程图、页面结构说明和时序图，是否继续？")) return;
     }
 
     // 清空评审状态，恢复标题
@@ -562,14 +679,17 @@ generatePrdBtn.addEventListener("click", async () => {
     prdExtraActions.classList.add("hidden");
     flowchartSection.classList.add("hidden");
     wireframeSection.classList.add("hidden");
+    sequenceSection.classList.add("hidden");
     lastFlowchartData = null;
     lastWireframeData = null;
+    lastSequenceData = null;
     reviewSection.classList.add("hidden");
     prdSection.querySelector(".output-header h2").textContent = "PRD 文档预览";
 
     // 切换到 PRD 视图
     outputSection.classList.add("hidden");
     prdSection.classList.remove("hidden");
+    updateStepIndicator("prd");
     prdContent.innerHTML = "";
     prdLoading.classList.remove("hidden");
     generatePrdBtn.disabled = true;
@@ -580,7 +700,7 @@ generatePrdBtn.addEventListener("click", async () => {
     prdLoading.classList.add("hidden");
     const markdown = await generatePRDWithAI(lastInput, qaList, (_delta, accumulated) => {
       prdContent.innerHTML = renderMarkdownToHTML(accumulated);
-    });
+    }, currentTemplate);
     lastPrdMarkdown = markdown;
 
     // 最终完整渲染一次，确保格式正确
@@ -602,6 +722,7 @@ generatePrdBtn.addEventListener("click", async () => {
 prdBackBtn.addEventListener("click", () => {
   prdSection.classList.add("hidden");
   outputSection.classList.remove("hidden");
+  updateStepIndicator("clarify");
   if (isFinalPrd) {
     backToFinalPrdBtn.classList.remove("hidden");
   }
@@ -611,6 +732,7 @@ backToFinalPrdBtn.addEventListener("click", () => {
   outputSection.classList.add("hidden");
   prdSection.classList.remove("hidden");
   backToFinalPrdBtn.classList.add("hidden");
+  updateStepIndicator(isFinalPrd ? "artifacts" : "prd");
 });
 
 prdExportBtn.addEventListener("click", () => {
@@ -642,6 +764,7 @@ prdReviewBtn.addEventListener("click", async () => {
     prdReviewBtn.disabled = true;
     prdReviewBtn.textContent = "评审中…";
     isGenerating = true;
+    updateStepIndicator("review");
 
     const markdown = await reviewPRDWithAI(
       lastInput,
@@ -649,7 +772,8 @@ prdReviewBtn.addEventListener("click", async () => {
       lastPrdMarkdown,
       (_delta, accumulated) => {
         reviewContent.innerHTML = renderMarkdownToHTML(accumulated);
-      }
+      },
+      currentTemplate
     );
     lastReviewMarkdown = markdown;
 
@@ -733,6 +857,7 @@ generateFinalPrdBtn.addEventListener("click", async () => {
 
     // 显示附加操作按钮（流程图 + 页面结构说明）
     prdExtraActions.classList.remove("hidden");
+    updateStepIndicator("artifacts");
     saveSession();
   } catch (error) {
     console.error("Final PRD generation failed:", error);
@@ -742,6 +867,61 @@ generateFinalPrdBtn.addEventListener("click", async () => {
     generateFinalPrdBtn.disabled = false;
     generateFinalPrdBtn.textContent = "按照修改建议进行补充并生成最终 PRD";
   }
+});
+
+// ========== 新建会话 ==========
+
+newSessionBtn.addEventListener("click", () => {
+  if (isGenerating) return;
+
+  const hasData = lastResult || lastPrdMarkdown;
+  if (hasData && !confirm("将清空当前工作区的所有内容，是否继续？")) return;
+
+  // 清除 localStorage
+  clearSession();
+  localStorage.removeItem(STORAGE_KEYS.INPUT);
+  localStorage.removeItem(STORAGE_KEYS.RESULT);
+  localStorage.removeItem(STORAGE_KEYS.ANSWERS);
+
+  // 重置状态变量
+  lastResult = null;
+  lastInput = "";
+  lastPrdMarkdown = "";
+  lastReviewMarkdown = "";
+  lastQAList = [];
+  isFinalPrd = false;
+  lastFlowchartData = null;
+  lastWireframeData = null;
+  lastSequenceData = null;
+  currentTemplate = "general";
+
+  // 重置 UI
+  textarea.value = "";
+  output.innerHTML = "";
+  prdContent.innerHTML = "";
+  reviewContent.innerHTML = "";
+  flowchartContent.innerHTML = "";
+  wireframeContent.innerHTML = "";
+  sequenceContent.innerHTML = "";
+  reviewQuestionsList.innerHTML = "";
+
+  outputSection.classList.add("hidden");
+  prdSection.classList.add("hidden");
+  reviewSection.classList.add("hidden");
+  flowchartSection.classList.add("hidden");
+  wireframeSection.classList.add("hidden");
+  sequenceSection.classList.add("hidden");
+  reviewQuestionsSection.classList.add("hidden");
+  prdExtraActions.classList.add("hidden");
+  backToFinalPrdBtn.classList.add("hidden");
+  exportBtn.classList.add("hidden");
+  generatePrdBtn.classList.add("hidden");
+
+  templateSelect.value = "general";
+  prdSection.querySelector(".output-header h2").textContent = "PRD 文档预览";
+  updateStepIndicator("input");
+
+  textarea.focus();
 });
 
 // ========== 复制问题清单 ==========
@@ -846,20 +1026,21 @@ function loadHistoryItem(index) {
   prdSection.classList.add("hidden");
   outputSection.classList.remove("hidden");
   render(lastResult);
-  historyModal.classList.add("hidden");
+  closeModal(historyModal);
+  updateStepIndicator("clarify");
 }
 
 historyBtn.addEventListener("click", () => {
   renderHistory();
-  historyModal.classList.remove("hidden");
+  openModal(historyModal);
 });
 
 historyCloseBtn.addEventListener("click", () => {
-  historyModal.classList.add("hidden");
+  closeModal(historyModal);
 });
 
 historyModal.addEventListener("click", (e) => {
-  if (e.target === historyModal) historyModal.classList.add("hidden");
+  if (e.target === historyModal) closeModal(historyModal);
 });
 
 historyList.addEventListener("click", (e) => {
@@ -1115,6 +1296,136 @@ wireframeCopyBtn.addEventListener("click", () => {
   handleCopyButton(wireframeCopyBtn, text, "复制结构说明");
 });
 
+// ========== 时序图 ==========
+
+generateSequenceBtn.addEventListener("click", async () => {
+  if (isGenerating) return;
+  try {
+    if (!getApiKey()) {
+      openSettings();
+      return;
+    }
+    if (!lastPrdMarkdown || !isFinalPrd) return;
+
+    // 显示加载状态
+    sequenceSection.classList.remove("hidden");
+    sequenceContent.innerHTML = "";
+    sequenceLoading.classList.remove("hidden");
+    generateSequenceBtn.disabled = true;
+    generateSequenceBtn.textContent = "分析中…";
+    isGenerating = true;
+
+    const loadingText = sequenceLoading.querySelector("p");
+    const rawJson = await generateSequenceWithAI(lastPrdMarkdown, (charCount) => {
+      loadingText.textContent = `AI 正在分析系统交互，已接收 ${charCount} 字…`;
+    });
+
+    const data = parseSequenceResponse(rawJson);
+    lastSequenceData = data;
+    saveSession();
+
+    sequenceLoading.classList.add("hidden");
+    renderSequenceDiagrams(data);
+
+    // 滚动到时序图区域
+    sequenceSection.scrollIntoView({ behavior: "smooth" });
+  } catch (error) {
+    console.error("Sequence diagram generation failed:", error);
+    sequenceLoading.classList.add("hidden");
+    showError(error, sequenceContent);
+  } finally {
+    isGenerating = false;
+    generateSequenceBtn.disabled = false;
+    generateSequenceBtn.textContent = "生成时序图";
+  }
+});
+
+/**
+ * 渲染时序图结果
+ * @param {object} data - { needed, reason, diagrams }
+ */
+async function renderSequenceDiagrams(data) {
+  if (!data.needed || data.diagrams.length === 0) {
+    sequenceContent.innerHTML = `
+      <div class="sequence-not-needed">
+        <p class="sequence-not-needed-icon">&#x2705;</p>
+        <p class="sequence-not-needed-text">${escapeHTML(data.reason || "该 PRD 不涉及多系统交互，无需时序图。")}</p>
+      </div>`;
+    sequenceCopyBtn.classList.add("hidden");
+    return;
+  }
+
+  sequenceCopyBtn.classList.remove("hidden");
+
+  const mermaidAvailable = typeof mermaid !== "undefined";
+
+  let html = "";
+  data.diagrams.forEach((diagram, index) => {
+    const safeTitle = escapeHTML(diagram.title);
+    const safeWhy = escapeHTML(diagram.why);
+    const chartId = `sequence-chart-${index}`;
+
+    html += `
+      <div class="sequence-card">
+        <h3>${safeTitle}</h3>
+        <p class="sequence-reason">${safeWhy}</p>
+        <div class="sequence-diagram" id="${chartId}">
+          ${mermaidAvailable ? `<pre class="mermaid">${escapeHTML(diagram.mermaid)}</pre>` : ""}
+        </div>
+        <details class="sequence-source">
+          <summary>查看 Mermaid 源码</summary>
+          <pre class="sequence-source-code"><code>${escapeHTML(diagram.mermaid)}</code></pre>
+        </details>
+      </div>`;
+  });
+
+  sequenceContent.innerHTML = html;
+
+  if (!mermaidAvailable) {
+    sequenceContent.querySelectorAll(".sequence-diagram").forEach((el) => {
+      el.innerHTML = `<div class="sequence-render-error"><p>时序图渲染库加载失败，请检查网络连接后刷新页面重试。</p></div>`;
+    });
+    sequenceContent.querySelectorAll(".sequence-source").forEach((el) => {
+      el.open = true;
+    });
+    return;
+  }
+
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: "default",
+    sequence: { useMaxWidth: true },
+    securityLevel: "strict",
+  });
+
+  const mermaidEls = sequenceContent.querySelectorAll(".mermaid");
+  for (let i = 0; i < mermaidEls.length; i++) {
+    const el = mermaidEls[i];
+    try {
+      const { svg } = await mermaid.render(`mermaid-svg-${_mermaidIdCounter++}`, el.textContent);
+      el.innerHTML = svg;
+    } catch (err) {
+      console.error(`Sequence diagram ${i} render failed:`, err);
+      el.innerHTML = `<div class="sequence-render-error"><p>该时序图渲染失败，请展开下方源码查看</p></div>`;
+      const card = el.closest(".sequence-card");
+      if (card) {
+        const details = card.querySelector(".sequence-source");
+        if (details) details.open = true;
+      }
+    }
+  }
+}
+
+sequenceCopyBtn.addEventListener("click", () => {
+  if (!lastSequenceData || !lastSequenceData.diagrams.length) return;
+
+  const text = lastSequenceData.diagrams
+    .map((d) => `## ${d.title}\n\n\`\`\`mermaid\n${d.mermaid}\n\`\`\``)
+    .join("\n\n---\n\n");
+
+  handleCopyButton(sequenceCopyBtn, text, "复制 Mermaid 源码");
+});
+
 // ========== 导出全套文档 ==========
 
 exportAllBtn.addEventListener("click", () => {
@@ -1147,16 +1458,30 @@ exportAllBtn.addEventListener("click", () => {
     exportWireframeOption.appendChild(hint);
   }
 
-  exportAllModal.classList.remove("hidden");
+  const hasSequence = lastSequenceData && lastSequenceData.needed && lastSequenceData.diagrams.length > 0;
+
+  exportIncludeSequence.checked = hasSequence;
+  exportIncludeSequence.disabled = !hasSequence;
+  exportSequenceOption.classList.toggle("export-option-disabled", !hasSequence);
+
+  exportSequenceOption.querySelectorAll(".export-option-hint").forEach((el) => el.remove());
+  if (!hasSequence) {
+    const hint = document.createElement("p");
+    hint.className = "export-option-hint";
+    hint.textContent = "尚未生成或不需要时序图";
+    exportSequenceOption.appendChild(hint);
+  }
+
+  openModal(exportAllModal);
 });
 
 exportAllCancelBtn.addEventListener("click", () => {
-  exportAllModal.classList.add("hidden");
+  closeModal(exportAllModal);
 });
 
 exportAllModal.addEventListener("click", (e) => {
   if (e.target === exportAllModal) {
-    exportAllModal.classList.add("hidden");
+    closeModal(exportAllModal);
   }
 });
 
@@ -1167,22 +1492,34 @@ exportAllConfirmBtn.addEventListener("click", () => {
     lastPrdMarkdown,
     lastFlowchartData,
     lastWireframeData,
+    lastSequenceData,
     {
       includeFlowchart: exportIncludeFlowchart.checked,
       includeWireframe: exportIncludeWireframe.checked,
+      includeSequence: exportIncludeSequence.checked,
     }
   );
 
   downloadMarkdown(md, "QuickPRD-全套文档");
-  exportAllModal.classList.add("hidden");
+  closeModal(exportAllModal);
 });
 
 // ========== 页面加载恢复 ==========
 
 (function restore() {
+  // — 恢复模板选择 —
+  const savedTemplate = localStorage.getItem(STORAGE_KEYS.SESSION_TEMPLATE);
+  if (savedTemplate && PRD_TEMPLATES[savedTemplate]) {
+    currentTemplate = savedTemplate;
+    templateSelect.value = currentTemplate;
+  }
+
   const savedInput = localStorage.getItem(STORAGE_KEYS.INPUT);
   const savedResult = localStorage.getItem(STORAGE_KEYS.RESULT);
-  if (!savedInput || !savedResult) return;
+  if (!savedInput || !savedResult) {
+    updateStepIndicator("input");
+    return;
+  }
 
   textarea.value = savedInput;
   lastInput = savedInput;
@@ -1190,7 +1527,9 @@ exportAllConfirmBtn.addEventListener("click", () => {
     lastResult = JSON.parse(savedResult);
     outputSection.classList.remove("hidden");
     render(lastResult);
+    updateStepIndicator("clarify");
   } catch (_) {
+    updateStepIndicator("input");
     return;
   }
 
@@ -1216,6 +1555,9 @@ exportAllConfirmBtn.addEventListener("click", () => {
 
     if (isFinalPrd) {
       prdExtraActions.classList.remove("hidden");
+      updateStepIndicator("artifacts");
+    } else {
+      updateStepIndicator("prd");
     }
   } else {
     // PRD 数据无效，重置终稿标志
@@ -1229,6 +1571,7 @@ exportAllConfirmBtn.addEventListener("click", () => {
     const cleanedMarkdown = stripReviewQuestionsBlock(savedReview);
     reviewContent.innerHTML = renderMarkdownToHTML(cleanedMarkdown);
     reviewSection.classList.remove("hidden");
+    updateStepIndicator("review");
 
     const savedReviewQ = localStorage.getItem(STORAGE_KEYS.SESSION_REVIEW_QUESTIONS);
     if (savedReviewQ) {
@@ -1261,6 +1604,19 @@ exportAllConfirmBtn.addEventListener("click", () => {
         lastWireframeData = parsedWireframe;
         wireframeSection.classList.remove("hidden");
         renderWireframes(lastWireframeData);
+      }
+    } catch (_) {}
+  }
+
+  // — 恢复时序图（需要 PRD 和终稿标志同时有效）—
+  const savedSequence = localStorage.getItem(STORAGE_KEYS.SESSION_SEQUENCE);
+  if (savedSequence && savedSequence.trim() && isFinalPrd && lastPrdMarkdown) {
+    try {
+      const parsedSequence = JSON.parse(savedSequence);
+      if (parsedSequence && typeof parsedSequence.needed !== "undefined") {
+        lastSequenceData = parsedSequence;
+        sequenceSection.classList.remove("hidden");
+        renderSequenceDiagrams(lastSequenceData);
       }
     } catch (_) {}
   }
