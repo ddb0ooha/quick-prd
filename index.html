@@ -97,6 +97,7 @@
           <h2>PRD 文档预览</h2>
           <div class="output-actions">
             <button id="prd-back-btn" class="action-btn">返回问题清单</button>
+            <button id="prd-edit-btn" class="action-btn hidden">编辑</button>
             <button id="prd-export-btn" class="action-btn">导出 Markdown</button>
             <button id="prd-copy-btn" class="action-btn">复制</button>
             <button id="prd-review-btn" class="action-btn action-btn-warning">风险评审</button>
@@ -237,6 +238,12 @@
       </select>
       <label for="prompt-version-select">Prompt 版本</label>
       <select id="prompt-version-select"></select>
+      <label for="theme-select">外观模式</label>
+      <select id="theme-select">
+        <option value="system">跟随系统</option>
+        <option value="light">浅色</option>
+        <option value="dark">深色</option>
+      </select>
       <label for="api-key-input">API Key</label>
       <input type="password" id="api-key-input" placeholder="sk-..." />
       <p class="modal-hint">

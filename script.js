@@ -16,6 +16,7 @@ const cancelKeyBtn = document.getElementById("cancel-key-btn");
 const providerSelect = document.getElementById("provider-select");
 const providerLink = document.getElementById("provider-link");
 const promptVersionSelect = document.getElementById("prompt-version-select");
+const themeSelect = document.getElementById("theme-select");
 
 // PRD 相关
 const generatePrdBtn = document.getElementById("generate-prd-btn");
@@ -24,6 +25,7 @@ const prdSection = document.getElementById("prd-section");
 const prdLoading = document.getElementById("prd-loading");
 const prdContent = document.getElementById("prd-content");
 const prdBackBtn = document.getElementById("prd-back-btn");
+const prdEditBtn = document.getElementById("prd-edit-btn");
 const prdExportBtn = document.getElementById("prd-export-btn");
 const prdCopyBtn = document.getElementById("prd-copy-btn");
 
@@ -82,6 +84,29 @@ const historyModal = document.getElementById("history-modal");
 const historyList = document.getElementById("history-list");
 const historyCloseBtn = document.getElementById("history-close-btn");
 const historyClearBtn = document.getElementById("history-clear-btn");
+
+// ========== 主题（深色模式） ==========
+
+function getThemePreference() {
+  return localStorage.getItem(STORAGE_KEYS.THEME) || "system";
+}
+
+function applyTheme(pref) {
+  const resolved = pref === "system"
+    ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+    : pref;
+  document.documentElement.setAttribute("data-theme", resolved);
+}
+
+// 页面加载时立即应用主题
+applyTheme(getThemePreference());
+
+// 监听系统主题变化（仅在「跟随系统」时响应）
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+  if (getThemePreference() === "system") {
+    applyTheme("system");
+  }
+});
 
 // ========== 工具函数 ==========
 
@@ -554,6 +579,7 @@ providerSelect.addEventListener("change", updateProviderUI);
 function openSettings() {
   providerSelect.value = getProvider();
   apiKeyInput.value = getApiKey();
+  themeSelect.value = getThemePreference();
   updateProviderUI();
 
   // 动态渲染 Prompt 版本选项
@@ -580,6 +606,10 @@ saveKeyBtn.addEventListener("click", () => {
   const selectedVersion = promptVersionSelect.value;
   setPromptVersion(selectedVersion);
   applyPromptVersion(selectedVersion);
+  // 保存并应用主题
+  const selectedTheme = themeSelect.value;
+  safeSetItem(STORAGE_KEYS.THEME, selectedTheme);
+  applyTheme(selectedTheme);
   closeSettings();
 });
 
@@ -727,6 +757,7 @@ generatePrdBtn.addEventListener("click", async () => {
     }
 
     // 清空评审状态，恢复标题
+    exitPrdEditMode();
     lastReviewMarkdown = "";
     isFinalPrd = false;
     backToFinalPrdBtn.classList.add("hidden");
@@ -758,6 +789,7 @@ generatePrdBtn.addEventListener("click", async () => {
 
     // 最终完整渲染一次，确保格式正确
     prdContent.innerHTML = renderMarkdownToHTML(markdown);
+    prdEditBtn.classList.remove("hidden");
     saveSession();
   } catch (error) {
     console.error("PRD generation failed:", error);
@@ -794,6 +826,78 @@ prdExportBtn.addEventListener("click", () => {
 prdCopyBtn.addEventListener("click", () => {
   if (!lastPrdMarkdown?.trim()) return;
   handleCopyButton(prdCopyBtn, lastPrdMarkdown, "复制");
+});
+
+// ========== PRD 编辑模式 ==========
+
+let prdEditMode = false;
+
+function enterPrdEditMode() {
+  if (!lastPrdMarkdown?.trim() || isGenerating) return;
+  prdEditMode = true;
+
+  // 创建编辑区域
+  const editContainer = document.createElement("div");
+  editContainer.id = "prd-edit-container";
+
+  const textarea = document.createElement("textarea");
+  textarea.className = "prd-edit-textarea";
+  textarea.value = lastPrdMarkdown;
+
+  const actions = document.createElement("div");
+  actions.className = "prd-edit-actions";
+
+  const saveBtn = document.createElement("button");
+  saveBtn.className = "btn btn-primary";
+  saveBtn.textContent = "保存";
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.className = "btn btn-secondary";
+  cancelBtn.textContent = "取消";
+
+  actions.appendChild(cancelBtn);
+  actions.appendChild(saveBtn);
+  editContainer.appendChild(textarea);
+  editContainer.appendChild(actions);
+
+  // 隐藏预览，显示编辑
+  prdContent.classList.add("hidden");
+  prdContent.parentNode.insertBefore(editContainer, prdContent.nextSibling);
+
+  // 切换按钮状态
+  prdEditBtn.textContent = "编辑中…";
+  prdEditBtn.disabled = true;
+
+  textarea.focus();
+
+  saveBtn.addEventListener("click", () => {
+    const newMarkdown = textarea.value;
+    if (newMarkdown.trim()) {
+      lastPrdMarkdown = newMarkdown;
+      prdContent.innerHTML = renderMarkdownToHTML(newMarkdown);
+      saveSession();
+      showToast("PRD 已更新", "success");
+    }
+    exitPrdEditMode();
+  });
+
+  cancelBtn.addEventListener("click", () => {
+    exitPrdEditMode();
+  });
+}
+
+function exitPrdEditMode() {
+  prdEditMode = false;
+  const editContainer = document.getElementById("prd-edit-container");
+  if (editContainer) editContainer.remove();
+  prdContent.classList.remove("hidden");
+  prdEditBtn.textContent = "编辑";
+  prdEditBtn.disabled = false;
+}
+
+prdEditBtn.addEventListener("click", () => {
+  if (prdEditMode) return;
+  enterPrdEditMode();
 });
 
 // ========== 风险评审 ==========
@@ -874,6 +978,7 @@ generateFinalPrdBtn.addEventListener("click", async () => {
     const reviewAnswers = collectReviewAnswers();
 
     // 隐藏评审区域，回到 PRD 内容区显示最终版
+    exitPrdEditMode();
     reviewSection.classList.add("hidden");
     prdContent.innerHTML = "";
     isGenerating = true;
@@ -901,6 +1006,7 @@ generateFinalPrdBtn.addEventListener("click", async () => {
 
     // 最终完整渲染
     prdContent.innerHTML = renderMarkdownToHTML(markdown);
+    prdEditBtn.classList.remove("hidden");
 
     // 标记为最终版，清空评审状态
     isFinalPrd = true;
@@ -945,6 +1051,10 @@ newSessionBtn.addEventListener("click", () => {
   lastWireframeData = null;
   lastSequenceData = null;
   currentTemplate = "general";
+
+  // 退出编辑模式（如果在编辑中）
+  exitPrdEditMode();
+  prdEditBtn.classList.add("hidden");
 
   // 重置 UI
   textarea.value = "";
@@ -1603,6 +1713,7 @@ exportAllConfirmBtn.addEventListener("click", () => {
     outputSection.classList.add("hidden");
     prdSection.classList.remove("hidden");
     prdContent.innerHTML = renderMarkdownToHTML(savedPrd);
+    prdEditBtn.classList.remove("hidden");
 
     const prdTitle = prdSection.querySelector(".output-header h2");
     prdTitle.textContent = isFinalPrd ? "PRD 文档（最终版）" : "PRD 文档预览";
