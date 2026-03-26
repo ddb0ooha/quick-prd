@@ -20,6 +20,7 @@ const STORAGE_KEYS = {
   SESSION_WIREFRAME: "rc_session_wireframe",
   SESSION_SEQUENCE: "rc_session_sequence",
   SESSION_TEMPLATE: "rc_session_template",
+  THEME: "rc_theme",
 };
 
 // ========== Prompt 版本定义 ==========
