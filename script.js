@@ -1180,7 +1180,7 @@ function saveToHistory(inputText, result) {
 function renderHistory() {
   const history = getHistory();
   if (history.length === 0) {
-    historyList.innerHTML = '<p class="history-empty">暂无历史记录</p>';
+    historyList.innerHTML = '<div class="history-empty"><img class="empty-illustration" src="assets/empty-history.png" alt="" aria-hidden="true"><p>暂无历史记录</p></div>';
     return;
   }
 
@@ -1321,7 +1321,7 @@ async function renderFlowcharts(data) {
   if (!data.needed || data.charts.length === 0) {
     flowchartContent.innerHTML = `
       <div class="flowchart-not-needed">
-        <p class="flowchart-not-needed-icon">&#x2705;</p>
+        <img class="empty-illustration" src="assets/empty-check.png" alt="" aria-hidden="true">
         <p class="flowchart-not-needed-text">${escapeHTML(data.reason || "该 PRD 功能较为简单，无需流程图辅助理解。")}</p>
       </div>`;
     flowchartCopyBtn.classList.add("hidden");
@@ -1458,7 +1458,7 @@ function renderWireframes(data) {
   if (!data.needed || data.pages.length === 0) {
     wireframeContent.innerHTML = `
       <div class="wireframe-not-needed">
-        <p class="wireframe-not-needed-icon">&#x2705;</p>
+        <img class="empty-illustration" src="assets/empty-check.png" alt="" aria-hidden="true">
         <p class="wireframe-not-needed-text">${escapeHTML(data.reason || "该 PRD 不涉及用户界面页面，无需页面结构说明。")}</p>
       </div>`;
     wireframeCopyBtn.classList.add("hidden");
@@ -1558,7 +1558,7 @@ async function renderSequenceDiagrams(data) {
   if (!data.needed || data.diagrams.length === 0) {
     sequenceContent.innerHTML = `
       <div class="sequence-not-needed">
-        <p class="sequence-not-needed-icon">&#x2705;</p>
+        <img class="empty-illustration" src="assets/empty-check.png" alt="" aria-hidden="true">
         <p class="sequence-not-needed-text">${escapeHTML(data.reason || "该 PRD 不涉及多系统交互，无需时序图。")}</p>
       </div>`;
     sequenceCopyBtn.classList.add("hidden");
