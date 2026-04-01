@@ -59,7 +59,7 @@
           </div>
           <div class="template-selector">
             <label class="template-label" for="template-select">类型：</label>
-            <select id="template-select" class="template-select">
+            <select id="template-select" class="template-select" title="选择后将影响澄清问题、PRD 生成和评审的分析逻辑，切换后需重新生成才生效">
               <option value="general">通用需求</option>
               <option value="marketing">营销活动</option>
               <option value="ecommerce">电商交易</option>
@@ -109,9 +109,9 @@
         </div>
         <div id="prd-content" class="prd-content" aria-live="polite"></div>
         <div class="prd-extra-actions hidden" id="prd-extra-actions">
-          <button id="generate-flowchart-btn" class="flowchart-btn">生成业务流程图</button>
-          <button id="generate-wireframe-btn" class="wireframe-btn">生成页面结构说明</button>
-          <button id="generate-sequence-btn" class="sequence-btn">生成时序图</button>
+          <button id="generate-flowchart-btn" class="flowchart-btn" title="需先完成评审并生成最终版 PRD">生成业务流程图</button>
+          <button id="generate-wireframe-btn" class="wireframe-btn" title="需先完成评审并生成最终版 PRD">生成页面结构说明</button>
+          <button id="generate-sequence-btn" class="sequence-btn" title="需先完成评审并生成最终版 PRD">生成时序图</button>
           <button id="export-all-btn" class="export-all-btn">导出全套文档</button>
         </div>
 

@@ -110,6 +110,15 @@ window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () 
 
 // ========== 工具函数 ==========
 
+function showSavedIndicator(el) {
+  el.parentNode.querySelector(".saved-indicator")?.remove();
+  const indicator = document.createElement("span");
+  indicator.className = "saved-indicator";
+  indicator.textContent = "已保存";
+  el.after(indicator);
+  setTimeout(() => indicator.remove(), 1800);
+}
+
 function escapeHTML(str) {
   const div = document.createElement("div");
   div.textContent = str;
@@ -322,6 +331,7 @@ let lastWireframeData = null;
 let lastSequenceData = null;
 let currentTemplate = "general";
 let _mermaidIdCounter = 0;
+let prdManuallyEdited = false;
 
 // ========== 答案持久化 ==========
 
@@ -431,7 +441,13 @@ function render(grouped) {
 
   // 绑定答案自动保存 + 自动扩展高度
   output.querySelectorAll(".answer-input").forEach((el) => {
-    el.addEventListener("input", () => { saveAnswers(); autoResize(el); });
+    let saveIndicatorTimer;
+    el.addEventListener("input", () => {
+      saveAnswers();
+      autoResize(el);
+      clearTimeout(saveIndicatorTimer);
+      saveIndicatorTimer = setTimeout(() => showSavedIndicator(el), 600);
+    });
     autoResize(el);
   });
 }
@@ -650,6 +666,9 @@ const templateSelect = document.getElementById("template-select");
 templateSelect.addEventListener("change", () => {
   currentTemplate = templateSelect.value;
   safeSetItem(STORAGE_KEYS.SESSION_TEMPLATE, currentTemplate);
+  if (lastResult || lastPrdMarkdown) {
+    showToast("模板已切换，下次重新生成时将应用新模板，当前已有内容不受影响", "warning", 4000);
+  }
 });
 
 // ========== 快捷键 ==========
@@ -681,6 +700,13 @@ generateBtn.addEventListener("click", async () => {
     if (!getApiKey()) {
       openSettings();
       return;
+    }
+
+    // 如果已有用户填写的答案，提醒用户将被清除
+    const savedAnswers = JSON.parse(localStorage.getItem(STORAGE_KEYS.ANSWERS) || "{}");
+    const filledAnswerCount = Object.values(savedAnswers).filter(v => String(v).trim()).length;
+    if (filledAnswerCount > 0) {
+      if (!confirm(`当前已有 ${filledAnswerCount} 个填写的答案，重新分析将清空这些内容，是否继续？`)) return;
     }
 
     // 如果已有流程图或页面结构或时序图，提醒用户将被覆盖
@@ -786,6 +812,7 @@ generatePrdBtn.addEventListener("click", async () => {
       prdContent.innerHTML = renderMarkdownToHTML(accumulated);
     }, currentTemplate);
     lastPrdMarkdown = markdown;
+    prdManuallyEdited = false;
 
     // 最终完整渲染一次，确保格式正确
     prdContent.innerHTML = renderMarkdownToHTML(markdown);
@@ -874,6 +901,7 @@ function enterPrdEditMode() {
     const newMarkdown = textarea.value;
     if (newMarkdown.trim()) {
       lastPrdMarkdown = newMarkdown;
+      prdManuallyEdited = true;
       prdContent.innerHTML = renderMarkdownToHTML(newMarkdown);
       saveSession();
       showToast("PRD 已更新", "success");
@@ -911,6 +939,10 @@ prdReviewBtn.addEventListener("click", async () => {
     }
 
     if (!lastPrdMarkdown?.trim()) return;
+
+    if (prdManuallyEdited) {
+      showToast("当前 PRD 已手动编辑，评审将基于最新内容进行", "warning", 4000);
+    }
 
     // 显示评审区域，清空内容
     reviewSection.classList.remove("hidden");
@@ -1011,6 +1043,7 @@ generateFinalPrdBtn.addEventListener("click", async () => {
     // 标记为最终版，清空评审状态
     isFinalPrd = true;
     lastReviewMarkdown = "";
+    prdManuallyEdited = false;
 
     // 显示附加操作按钮（流程图 + 页面结构说明）
     prdExtraActions.classList.remove("hidden");
@@ -1018,6 +1051,7 @@ generateFinalPrdBtn.addEventListener("click", async () => {
     saveSession();
   } catch (error) {
     console.error("Final PRD generation failed:", error);
+    reviewSection.classList.remove("hidden");
     showError(error, prdContent);
   } finally {
     isGenerating = false;
@@ -1031,7 +1065,7 @@ generateFinalPrdBtn.addEventListener("click", async () => {
 newSessionBtn.addEventListener("click", () => {
   if (isGenerating) return;
 
-  const hasData = lastResult || lastPrdMarkdown;
+  const hasData = lastResult || lastPrdMarkdown || lastReviewMarkdown || lastFlowchartData || lastWireframeData || lastSequenceData;
   if (hasData && !confirm("将清空当前工作区的所有内容，是否继续？")) return;
 
   // 清除 localStorage
@@ -1047,6 +1081,7 @@ newSessionBtn.addEventListener("click", () => {
   lastReviewMarkdown = "";
   lastQAList = [];
   isFinalPrd = false;
+  prdManuallyEdited = false;
   lastFlowchartData = null;
   lastWireframeData = null;
   lastSequenceData = null;
@@ -1239,7 +1274,11 @@ generateFlowchartBtn.addEventListener("click", async () => {
       openSettings();
       return;
     }
-    if (!lastPrdMarkdown || !isFinalPrd) return;
+    if (!lastPrdMarkdown) return;
+    if (!isFinalPrd) {
+      showToast("请先完成评审并生成最终版 PRD，再生成此产出物", "warning");
+      return;
+    }
 
     // 显示加载状态
     flowchartSection.classList.remove("hidden");
@@ -1374,7 +1413,11 @@ generateWireframeBtn.addEventListener("click", async () => {
       openSettings();
       return;
     }
-    if (!lastPrdMarkdown || !isFinalPrd) return;
+    if (!lastPrdMarkdown) return;
+    if (!isFinalPrd) {
+      showToast("请先完成评审并生成最终版 PRD，再生成此产出物", "warning");
+      return;
+    }
 
     wireframeSection.classList.remove("hidden");
     wireframeContent.innerHTML = "";
@@ -1468,7 +1511,11 @@ generateSequenceBtn.addEventListener("click", async () => {
       openSettings();
       return;
     }
-    if (!lastPrdMarkdown || !isFinalPrd) return;
+    if (!lastPrdMarkdown) return;
+    if (!isFinalPrd) {
+      showToast("请先完成评审并生成最终版 PRD，再生成此产出物", "warning");
+      return;
+    }
 
     // 显示加载状态
     sequenceSection.classList.remove("hidden");
@@ -1784,6 +1831,19 @@ exportAllConfirmBtn.addEventListener("click", () => {
         renderSequenceDiagrams(lastSequenceData);
       }
     } catch (_) {}
+  }
+
+  // — 恢复完成后显示下一步引导 —
+  let nextStepHint = "";
+  if (lastReviewMarkdown && !isFinalPrd) {
+    nextStepHint = "会话已恢复 — 下一步：确认待决策问题并点击「生成最终版 PRD」";
+  } else if (lastPrdMarkdown && !isFinalPrd) {
+    nextStepHint = "会话已恢复 — 下一步：点击「风险评审」审查 PRD";
+  } else if (lastResult && !lastPrdMarkdown) {
+    nextStepHint = "会话已恢复 — 下一步：填写答案后点击「生成 PRD 文档」";
+  }
+  if (nextStepHint) {
+    setTimeout(() => showToast(nextStepHint, "success", 5000), 600);
   }
 })();
 

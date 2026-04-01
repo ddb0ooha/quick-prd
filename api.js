@@ -15,14 +15,7 @@ const API_PROVIDERS = {
 
 // ========== 共享常量 ==========
 
-const GROUP_ORDER = [
-  "业务目标",
-  "用户范围",
-  "核心指标",
-  "关键规则",
-  "边界异常",
-  "风控/技术约束",
-];
+// GROUP_ORDER 已迁移至 prompts.js，与 analyze prompt 维度定义集中管理
 
 const STREAM_TIMEOUT_MS = 60000; // 流式统一 60 秒无数据超时
 
