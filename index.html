@@ -6,182 +6,261 @@
   <title>QuickPRD</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
-    <header>
-      <div class="header-row">
-        <h1>QuickPRD</h1>
-        <button id="new-session-btn" class="icon-btn" title="新建会话">📄</button>
-        <button id="history-btn" class="icon-btn" title="历史记录">📋</button>
-        <button id="settings-btn" class="icon-btn" title="设置 API Key">⚙️</button>
+  <div class="app-wrapper">
+
+    <!-- ===== 顶部导航栏 ===== -->
+    <header class="app-header">
+      <div class="app-header-left">
+        <svg class="app-logo-icon" width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <rect x="2" y="2" width="18" height="18" rx="4" fill="var(--color-primary)" opacity="0.15"/>
+          <rect x="2" y="2" width="18" height="18" rx="4" stroke="var(--color-primary)" stroke-width="1.5"/>
+          <path d="M7 8h8M7 11h8M7 14h5" stroke="var(--color-primary)" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span class="app-logo-text">QuickPRD</span>
+        <span class="app-beta-tag">Beta</span>
       </div>
-      <p class="subtitle">从一句模糊需求到可评审的 PRD，全流程 AI 自动化</p>
+      <div class="app-header-right">
+        <button id="new-session-btn" class="icon-btn" title="新建会话" aria-label="新建会话">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+            <path d="M8 2H3a1 1 0 00-1 1v9a1 1 0 001 1h9a1 1 0 001-1V7M11 1l3 3M11 1L7.5 4.5M11 1v3h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>新建</span>
+        </button>
+        <button id="history-btn" class="icon-btn" title="历史记录" aria-label="历史记录">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+            <circle cx="7.5" cy="7.5" r="5.5" stroke="currentColor" stroke-width="1.3"/>
+            <path d="M7.5 4.5V7.5l2 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>历史</span>
+        </button>
+        <button id="settings-btn" class="icon-btn" title="设置 API Key" aria-label="设置">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+            <path d="M7.5 9.5a2 2 0 100-4 2 2 0 000 4z" stroke="currentColor" stroke-width="1.3"/>
+            <path d="M12.1 9.2l.7 1.2-1.4 1.4-1.2-.7a4.5 4.5 0 01-1.4.6L8.5 13h-2l-.3-1.3a4.5 4.5 0 01-1.4-.6l-1.2.7L2.2 10.4l.7-1.2A4.5 4.5 0 012.5 7.8V7.2a4.5 4.5 0 01.4-1.4l-.7-1.2 1.4-1.4 1.2.7a4.5 4.5 0 011.4-.6L6.5 2h2l.3 1.3a4.5 4.5 0 011.4.6l1.2-.7 1.4 1.4-.7 1.2a4.5 4.5 0 01.4 1.4v.6a4.5 4.5 0 01-.4 1.4z" stroke="currentColor" stroke-width="1.3"/>
+          </svg>
+          <span>设置</span>
+        </button>
+      </div>
     </header>
 
-    <nav class="step-indicator" id="step-indicator" aria-label="工作流进度">
-      <div class="step active" data-step="input">
-        <span class="step-number">1</span>
-        <span class="step-label">需求输入</span>
-      </div>
-      <div class="step-connector"></div>
-      <div class="step" data-step="clarify">
-        <span class="step-number">2</span>
-        <span class="step-label">需求澄清</span>
-      </div>
-      <div class="step-connector"></div>
-      <div class="step" data-step="prd">
-        <span class="step-number">3</span>
-        <span class="step-label">PRD 生成</span>
-      </div>
-      <div class="step-connector"></div>
-      <div class="step" data-step="review">
-        <span class="step-number">4</span>
-        <span class="step-label">评审优化</span>
-      </div>
-      <div class="step-connector"></div>
-      <div class="step" data-step="artifacts">
-        <span class="step-number">5</span>
-        <span class="step-label">产出物</span>
-      </div>
-    </nav>
+    <!-- ===== 主体：侧栏 + 内容区 ===== -->
+    <div class="app-body">
 
-    <main>
-      <section class="card input-section">
-        <div class="input-toolbar">
-          <div class="examples">
-            <span class="examples-label">示例：</span>
-            <button type="button" class="example-btn" data-example="新人弹窗送券">新人弹窗送券</button>
-            <button type="button" class="example-btn" data-example="订单取消流程">订单取消流程</button>
-            <button type="button" class="example-btn" data-example="会员签到奖励">会员签到奖励</button>
+      <!-- 左侧步骤导航 -->
+      <aside class="app-sidebar">
+        <div class="sidebar-section-label">工作流</div>
+        <nav class="step-indicator" id="step-indicator" aria-label="工作流进度">
+          <div class="step active" data-step="input">
+            <span class="step-number">1</span>
+            <span class="step-label">需求输入</span>
           </div>
-          <div class="template-selector">
-            <label class="template-label" for="template-select">类型：</label>
-            <select id="template-select" class="template-select" title="选择后将影响澄清问题、PRD 生成和评审的分析逻辑，切换后需重新生成才生效">
-              <option value="general">通用需求</option>
-              <option value="marketing">营销活动</option>
-              <option value="ecommerce">电商交易</option>
-              <option value="admin">后台管理</option>
-            </select>
+          <div class="step-connector"></div>
+          <div class="step" data-step="clarify">
+            <span class="step-number">2</span>
+            <span class="step-label">需求澄清</span>
           </div>
-        </div>
-        <textarea
-          id="requirement"
-          placeholder="例如：我想做一个电商网站，用户可以买东西……&#10;&#10;按 Ctrl+Enter 快速提交"
-          rows="6"
-        ></textarea>
-        <button id="generate-btn">生成澄清问题</button>
-      </section>
+          <div class="step-connector"></div>
+          <div class="step" data-step="prd">
+            <span class="step-number">3</span>
+            <span class="step-label">PRD 生成</span>
+          </div>
+          <div class="step-connector"></div>
+          <div class="step" data-step="review">
+            <span class="step-number">4</span>
+            <span class="step-label">评审优化</span>
+          </div>
+          <div class="step-connector"></div>
+          <div class="step" data-step="artifacts">
+            <span class="step-number">5</span>
+            <span class="step-label">产出物</span>
+          </div>
+        </nav>
 
-      <section id="output-section" class="output-section section-fade hidden">
-        <div class="output-header">
-          <h2>需要进一步澄清的问题</h2>
-          <div class="output-actions">
-            <button id="export-btn" class="action-btn hidden">导出文档</button>
-            <button id="copy-btn" class="action-btn">复制结果</button>
-          </div>
+        <div class="sidebar-footer">
+          <p class="sidebar-tagline">从模糊需求<br>到可评审 PRD</p>
         </div>
-        <div id="loading" class="loading hidden">
-          <div class="spinner"></div>
-          <p>AI 正在分析需求，请稍候…</p>
-        </div>
-        <div id="output" aria-live="polite"></div>
-        <button id="generate-prd-btn" class="prd-btn hidden">生成 PRD 文档</button>
-        <button id="back-to-final-prd-btn" class="prd-btn hidden">查看最终 PRD 文档</button>
-      </section>
+      </aside>
 
-      <section id="prd-section" class="prd-section section-fade hidden">
-        <div class="output-header">
-          <h2>PRD 文档预览</h2>
-          <div class="output-actions">
-            <button id="prd-back-btn" class="action-btn">返回问题清单</button>
-            <button id="prd-edit-btn" class="action-btn hidden">编辑</button>
-            <button id="prd-export-btn" class="action-btn">导出 Markdown</button>
-            <button id="prd-copy-btn" class="action-btn">复制</button>
-            <button id="prd-review-btn" class="action-btn action-btn-warning">风险评审</button>
-          </div>
-        </div>
-        <div id="prd-loading" class="loading hidden">
-          <div class="spinner"></div>
-          <p>AI 正在生成 PRD 文档，请稍候…</p>
-        </div>
-        <div id="prd-content" class="prd-content" aria-live="polite"></div>
-        <div class="prd-extra-actions hidden" id="prd-extra-actions">
-          <button id="generate-flowchart-btn" class="flowchart-btn" title="需先完成评审并生成最终版 PRD">生成业务流程图</button>
-          <button id="generate-wireframe-btn" class="wireframe-btn" title="需先完成评审并生成最终版 PRD">生成页面结构说明</button>
-          <button id="generate-sequence-btn" class="sequence-btn" title="需先完成评审并生成最终版 PRD">生成时序图</button>
-          <button id="export-all-btn" class="export-all-btn">导出全套文档</button>
-        </div>
+      <!-- 右侧主内容区 -->
+      <main class="app-main">
 
-        <div id="review-section" class="review-section hidden">
-          <hr class="section-divider">
-          <div class="output-header">
-            <h2>技术 / 风控评审</h2>
-            <div class="output-actions">
-              <button id="review-export-btn" class="action-btn">导出评审报告</button>
-              <button id="review-copy-btn" class="action-btn">复制评审结果</button>
+        <!-- Step 1：需求输入 -->
+        <section class="card input-section">
+          <div class="section-top-bar section-top-bar--primary"></div>
+          <div class="section-header">
+            <div class="section-header-left">
+              <h2 class="section-title">描述你的产品需求</h2>
+              <p class="section-desc">越具体越好，AI 会帮你提炼关键信息</p>
             </div>
           </div>
-          <div id="review-content" class="review-content" aria-live="polite"></div>
-          <div id="review-questions-section" class="review-questions-section hidden">
-            <h3>需要您确认的问题</h3>
-            <p class="review-questions-hint">以下问题需要您的决策，AI 才能给出合理的 MVP 方案。可留空跳过，AI 将按最简方案处理。</p>
-            <div id="review-questions-list"></div>
-          </div>
-          <button id="generate-final-prd-btn" class="final-prd-btn">按照修改建议进行补充并生成最终 PRD</button>
-        </div>
-
-        <div id="flowchart-section" class="flowchart-section hidden">
-          <hr class="section-divider">
-          <div class="output-header">
-            <h2>业务流程图</h2>
-            <div class="output-actions">
-              <button id="flowchart-copy-btn" class="action-btn">复制 Mermaid 源码</button>
+          <div class="input-toolbar">
+            <div class="examples">
+              <span class="examples-label">快速示例：</span>
+              <button type="button" class="example-btn" data-example="新人弹窗送券">新人弹窗送券</button>
+              <button type="button" class="example-btn" data-example="订单取消流程">订单取消流程</button>
+              <button type="button" class="example-btn" data-example="会员签到奖励">会员签到奖励</button>
+            </div>
+            <div class="template-selector">
+              <label class="template-label" for="template-select">需求类型：</label>
+              <select id="template-select" class="template-select" title="选择后将影响澄清问题、PRD 生成和评审的分析逻辑，切换后需重新生成才生效">
+                <option value="general">通用需求</option>
+                <option value="marketing">营销活动</option>
+                <option value="ecommerce">电商交易</option>
+                <option value="admin">后台管理</option>
+              </select>
             </div>
           </div>
-          <div id="flowchart-loading" class="loading hidden">
-            <div class="spinner"></div>
-            <p>AI 正在分析流程并生成流程图…</p>
-          </div>
-          <div id="flowchart-content" class="flowchart-content"></div>
-        </div>
+          <textarea
+            id="requirement"
+            class="input-base requirement-textarea"
+            placeholder="例如：我想做一个电商网站，用户可以买东西……&#10;&#10;按 Ctrl+Enter 快速提交"
+            rows="6"
+          ></textarea>
+          <button id="generate-btn" class="btn btn-primary btn-block">生成澄清问题</button>
+        </section>
 
-        <div id="wireframe-section" class="wireframe-section hidden">
-          <hr class="section-divider">
-          <div class="output-header">
-            <h2>页面结构说明</h2>
-            <div class="output-actions">
-              <button id="wireframe-copy-btn" class="action-btn">复制结构说明</button>
+        <!-- Step 2：需求澄清 -->
+        <section id="output-section" class="output-section section-fade hidden">
+          <div class="card">
+            <div class="section-top-bar section-top-bar--primary"></div>
+            <div class="output-header">
+              <h2 class="section-title">需要进一步澄清的问题</h2>
+              <div class="output-actions">
+                <button id="export-btn" class="action-btn hidden">导出文档</button>
+                <button id="copy-btn" class="action-btn">复制结果</button>
+              </div>
+            </div>
+            <div id="loading" class="loading hidden">
+              <div class="spinner"></div>
+              <p>AI 正在分析需求，请稍候…</p>
+            </div>
+            <div id="output" aria-live="polite"></div>
+            <button id="generate-prd-btn" class="btn btn-success btn-block hidden">生成 PRD 文档</button>
+            <button id="back-to-final-prd-btn" class="btn btn-primary btn-block hidden">查看最终 PRD 文档</button>
+          </div>
+        </section>
+
+        <!-- Step 3-5：PRD 区域 -->
+        <section id="prd-section" class="prd-section section-fade hidden">
+
+          <!-- PRD 主卡片 -->
+          <div class="card prd-card">
+            <div class="section-top-bar section-top-bar--success"></div>
+            <div class="output-header">
+              <h2 class="section-title">PRD 文档预览</h2>
+              <div class="output-actions">
+                <button id="prd-back-btn" class="action-btn">返回问题清单</button>
+                <button id="prd-edit-btn" class="action-btn hidden">编辑</button>
+                <button id="prd-export-btn" class="action-btn">导出 Markdown</button>
+                <button id="prd-copy-btn" class="action-btn">复制</button>
+                <button id="prd-review-btn" class="action-btn action-btn-warning">风险评审</button>
+              </div>
+            </div>
+            <div id="prd-loading" class="loading hidden">
+              <div class="spinner"></div>
+              <p>AI 正在生成 PRD 文档，请稍候…</p>
+            </div>
+            <div id="prd-content" class="prd-content" aria-live="polite"></div>
+          </div>
+
+          <!-- 产出物按钮组 -->
+          <div class="prd-extra-actions hidden" id="prd-extra-actions">
+            <button id="generate-flowchart-btn" class="flowchart-btn" title="需先完成评审并生成最终版 PRD">生成业务流程图</button>
+            <button id="generate-wireframe-btn" class="wireframe-btn" title="需先完成评审并生成最终版 PRD">生成页面结构说明</button>
+            <button id="generate-sequence-btn" class="sequence-btn" title="需先完成评审并生成最终版 PRD">生成时序图</button>
+            <button id="export-all-btn" class="export-all-btn">导出全套文档</button>
+          </div>
+
+          <!-- 评审区域 -->
+          <div id="review-section" class="review-section hidden">
+            <hr class="section-divider">
+            <div class="card review-card">
+              <div class="section-top-bar section-top-bar--warning"></div>
+              <div class="output-header">
+                <h2 class="section-title">技术 / 风控评审</h2>
+                <div class="output-actions">
+                  <button id="review-export-btn" class="action-btn">导出评审报告</button>
+                  <button id="review-copy-btn" class="action-btn">复制评审结果</button>
+                </div>
+              </div>
+              <div id="review-content" class="review-content" aria-live="polite"></div>
+              <div id="review-questions-section" class="review-questions-section hidden">
+                <h3>需要您确认的问题</h3>
+                <p class="review-questions-hint">以下问题需要您的决策，AI 才能给出合理的 MVP 方案。可留空跳过，AI 将按最简方案处理。</p>
+                <div id="review-questions-list"></div>
+              </div>
+              <button id="generate-final-prd-btn" class="btn btn-success btn-block">按照修改建议进行补充并生成最终 PRD</button>
             </div>
           </div>
-          <div id="wireframe-loading" class="loading hidden">
-            <div class="spinner"></div>
-            <p>AI 正在分析页面结构…</p>
-          </div>
-          <div id="wireframe-content" class="wireframe-content"></div>
-        </div>
 
-        <div id="sequence-section" class="sequence-section hidden">
-          <hr class="section-divider">
-          <div class="output-header">
-            <h2>时序图</h2>
-            <div class="output-actions">
-              <button id="sequence-copy-btn" class="action-btn">复制 Mermaid 源码</button>
+          <!-- 流程图 -->
+          <div id="flowchart-section" class="flowchart-section hidden">
+            <hr class="section-divider">
+            <div class="card artifact-card">
+              <div class="section-top-bar section-top-bar--flowchart"></div>
+              <div class="output-header">
+                <h2 class="section-title">业务流程图</h2>
+                <div class="output-actions">
+                  <button id="flowchart-copy-btn" class="action-btn">复制 Mermaid 源码</button>
+                </div>
+              </div>
+              <div id="flowchart-loading" class="loading hidden">
+                <div class="spinner"></div>
+                <p>AI 正在分析流程并生成流程图…</p>
+              </div>
+              <div id="flowchart-content" class="flowchart-content"></div>
             </div>
           </div>
-          <div id="sequence-loading" class="loading hidden">
-            <div class="spinner"></div>
-            <p>AI 正在分析系统交互并生成时序图…</p>
+
+          <!-- 页面结构 -->
+          <div id="wireframe-section" class="wireframe-section hidden">
+            <hr class="section-divider">
+            <div class="card artifact-card">
+              <div class="section-top-bar section-top-bar--wireframe"></div>
+              <div class="output-header">
+                <h2 class="section-title">页面结构说明</h2>
+                <div class="output-actions">
+                  <button id="wireframe-copy-btn" class="action-btn">复制结构说明</button>
+                </div>
+              </div>
+              <div id="wireframe-loading" class="loading hidden">
+                <div class="spinner"></div>
+                <p>AI 正在分析页面结构…</p>
+              </div>
+              <div id="wireframe-content" class="wireframe-content"></div>
+            </div>
           </div>
-          <div id="sequence-content" class="sequence-content"></div>
-        </div>
-      </section>
-    </main>
+
+          <!-- 时序图 -->
+          <div id="sequence-section" class="sequence-section hidden">
+            <hr class="section-divider">
+            <div class="card artifact-card">
+              <div class="section-top-bar section-top-bar--sequence"></div>
+              <div class="output-header">
+                <h2 class="section-title">时序图</h2>
+                <div class="output-actions">
+                  <button id="sequence-copy-btn" class="action-btn">复制 Mermaid 源码</button>
+                </div>
+              </div>
+              <div id="sequence-loading" class="loading hidden">
+                <div class="spinner"></div>
+                <p>AI 正在分析系统交互并生成时序图…</p>
+              </div>
+              <div id="sequence-content" class="sequence-content"></div>
+            </div>
+          </div>
+
+        </section>
+
+      </main>
+    </div>
   </div>
 
-  <!-- 历史记录弹窗 -->
+  <!-- ===== 历史记录弹窗 ===== -->
   <div id="history-modal" class="modal-overlay hidden">
     <div class="modal modal-lg">
       <div class="modal-header-row">
@@ -195,12 +274,12 @@
         </div>
       </div>
       <div class="modal-actions">
-        <button id="history-close-btn" class="btn-secondary">关闭</button>
+        <button id="history-close-btn" class="btn btn-secondary">关闭</button>
       </div>
     </div>
   </div>
 
-  <!-- 导出全套文档弹窗 -->
+  <!-- ===== 导出全套文档弹窗 ===== -->
   <div id="export-all-modal" class="modal-overlay hidden">
     <div class="modal modal-sm">
       <h3>导出全套文档</h3>
@@ -224,13 +303,13 @@
         </label>
       </div>
       <div class="modal-actions">
-        <button id="export-all-cancel-btn" class="btn-secondary">取消</button>
-        <button id="export-all-confirm-btn">确认导出</button>
+        <button id="export-all-cancel-btn" class="btn btn-secondary">取消</button>
+        <button id="export-all-confirm-btn" class="btn btn-primary">确认导出</button>
       </div>
     </div>
   </div>
 
-  <!-- 设置弹窗 -->
+  <!-- ===== 设置弹窗 ===== -->
   <div id="settings-modal" class="modal-overlay hidden">
     <div class="modal">
       <h3>API 设置</h3>
@@ -254,8 +333,8 @@
         <a id="provider-link" href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener">获取 API Key →</a>
       </p>
       <div class="modal-actions">
-        <button id="cancel-key-btn" class="btn-secondary">取消</button>
-        <button id="save-key-btn">保存</button>
+        <button id="cancel-key-btn" class="btn btn-secondary">取消</button>
+        <button id="save-key-btn" class="btn btn-primary">保存</button>
       </div>
     </div>
   </div>
