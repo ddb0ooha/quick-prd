@@ -304,7 +304,13 @@
       </div>
       <div class="modal-actions">
         <button id="export-all-cancel-btn" class="btn btn-secondary">取消</button>
-        <button id="export-all-confirm-btn" class="btn btn-primary">确认导出</button>
+        <div class="btn-group">
+          <button id="export-all-confirm-btn" class="btn btn-primary">导出 Markdown</button>
+          <button id="export-format-toggle" class="btn btn-primary btn-split-arrow" aria-label="选择导出格式">▾</button>
+          <div id="export-format-menu" class="btn-group-menu hidden">
+            <button id="export-html-btn">导出 HTML</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
