@@ -74,6 +74,9 @@ const exportFlowchartOption = document.getElementById("export-flowchart-option")
 const exportWireframeOption = document.getElementById("export-wireframe-option");
 const exportIncludeSequence = document.getElementById("export-include-sequence");
 const exportSequenceOption = document.getElementById("export-sequence-option");
+const exportFormatToggle = document.getElementById("export-format-toggle");
+const exportFormatMenu = document.getElementById("export-format-menu");
+const exportHtmlBtn = document.getElementById("export-html-btn");
 
 // 新建会话
 const newSessionBtn = document.getElementById("new-session-btn");
@@ -1687,6 +1690,7 @@ exportAllBtn.addEventListener("click", () => {
 });
 
 exportAllCancelBtn.addEventListener("click", () => {
+  exportFormatMenu.classList.add("hidden");
   closeModal(exportAllModal);
 });
 
@@ -1694,6 +1698,17 @@ exportAllModal.addEventListener("click", (e) => {
   if (e.target === exportAllModal) {
     closeModal(exportAllModal);
   }
+});
+
+// 下拉菜单开关
+exportFormatToggle.addEventListener("click", (e) => {
+  e.stopPropagation();
+  exportFormatMenu.classList.toggle("hidden");
+});
+
+// 点击弹窗任意位置收起菜单
+exportAllModal.addEventListener("click", () => {
+  exportFormatMenu.classList.add("hidden");
 });
 
 exportAllConfirmBtn.addEventListener("click", () => {
@@ -1712,6 +1727,26 @@ exportAllConfirmBtn.addEventListener("click", () => {
   );
 
   downloadMarkdown(md, "QuickPRD-全套文档");
+  closeModal(exportAllModal);
+});
+
+exportHtmlBtn.addEventListener("click", () => {
+  if (!lastPrdMarkdown?.trim()) return;
+
+  const html = generateHTMLDocument(
+    lastPrdMarkdown,
+    lastFlowchartData,
+    lastWireframeData,
+    lastSequenceData,
+    {
+      includeFlowchart: exportIncludeFlowchart.checked,
+      includeWireframe: exportIncludeWireframe.checked,
+      includeSequence: exportIncludeSequence.checked,
+    }
+  );
+
+  downloadHTML(html, "QuickPRD-全套文档");
+  exportFormatMenu.classList.add("hidden");
   closeModal(exportAllModal);
 });
 
