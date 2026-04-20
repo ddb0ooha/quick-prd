@@ -99,10 +99,10 @@
           </div>
           <div class="input-toolbar">
             <div class="examples">
-              <span class="examples-label">快速示例：</span>
-              <button type="button" class="example-btn" data-example="新人弹窗送券">新人弹窗送券</button>
-              <button type="button" class="example-btn" data-example="订单取消流程">订单取消流程</button>
-              <button type="button" class="example-btn" data-example="会员签到奖励">会员签到奖励</button>
+              <span class="examples-label">没有灵感？试试这些示例：</span>
+              <button type="button" class="example-btn" data-example="搜索功能" title="点击填入示例需求，可直接体验完整流程">搜索功能</button>
+              <button type="button" class="example-btn" data-example="消息通知中心" title="点击填入示例需求，可直接体验完整流程">消息通知中心</button>
+              <button type="button" class="example-btn" data-example="角色权限管理" title="点击填入示例需求，可直接体验完整流程">角色权限管理</button>
             </div>
             <div class="template-selector">
               <label class="template-label" for="template-select">需求类型：</label>
@@ -120,6 +120,10 @@
             placeholder="例如：我想做一个电商网站，用户可以买东西……&#10;&#10;按 Ctrl+Enter 快速提交"
             rows="6"
           ></textarea>
+          <div id="api-key-banner" class="api-key-banner hidden">
+            <span>还没有设置 API Key，完成设置后才能生成内容。</span>
+            <button type="button" id="api-key-banner-btn" class="api-key-banner-link">立即设置 →</button>
+          </div>
           <button id="generate-btn" class="btn btn-primary btn-block">生成澄清问题</button>
         </section>
 

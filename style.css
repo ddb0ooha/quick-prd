@@ -637,6 +637,25 @@ button {
   transform: translateY(-1px);
 }
 
+/* 幽灵按钮 */
+.btn-ghost {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.btn-ghost:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+/* 小尺寸变体 */
+.btn-sm {
+  padding: 5px 14px;
+  font-size: var(--font-size-sm);
+  min-height: unset;
+}
+
 /* 危险文字按钮 */
 .btn-text-danger {
   background: none;
@@ -1213,6 +1232,92 @@ select:focus,
   flex: 1;
   height: 1px;
   background: var(--color-border-light);
+}
+
+/* ========== API Key 缺失横幅 ========== */
+
+.api-key-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-warning-light);
+  border: 1px solid var(--color-warning-border);
+  border-left: 3px solid var(--color-warning);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-top: var(--space-3);
+}
+
+.api-key-banner-link {
+  background: none;
+  border: none;
+  color: var(--color-warning-active);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.api-key-banner-link:hover {
+  text-decoration: underline;
+}
+
+/* ========== 内联确认 Banner ========== */
+
+.confirm-banner {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-warning-light);
+  border: 1px solid var(--color-warning-border);
+  border-left: 3px solid var(--color-warning);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-3);
+  animation: banner-in 150ms ease;
+}
+
+@keyframes banner-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.confirm-banner-body {
+  flex: 1;
+}
+
+.confirm-banner-label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-warning-active);
+  margin: 0 0 var(--space-1);
+}
+
+.confirm-banner-msg {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.confirm-banner-list {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: var(--space-1) 0 0;
+  padding-left: var(--space-5);
+}
+
+.confirm-banner-list li + li {
+  margin-top: 2px;
+}
+
+.confirm-banner-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
 }
 
 /* 问题清单卡片 */

@@ -11,6 +11,8 @@ const loading = document.getElementById("loading");
 const settingsBtn = document.getElementById("settings-btn");
 const settingsModal = document.getElementById("settings-modal");
 const apiKeyInput = document.getElementById("api-key-input");
+const apiKeyBanner = document.getElementById("api-key-banner");
+const apiKeyBannerBtn = document.getElementById("api-key-banner-btn");
 const saveKeyBtn = document.getElementById("save-key-btn");
 const cancelKeyBtn = document.getElementById("cancel-key-btn");
 const providerSelect = document.getElementById("provider-select");
@@ -172,6 +174,43 @@ function safeSetItem(key, value) {
       showToast("本地存储空间不足，部分数据可能无法保存。请清理历史记录后重试。", "warning", 4000);
     }
   }
+}
+
+// ========== 内联确认 Banner ==========
+
+function showConfirmBanner(refEl, messages, onConfirm, { mode = "before" } = {}) {
+  document.querySelectorAll(".confirm-banner").forEach((b) => b.remove());
+
+  const isMultiple = messages.length > 1;
+  const contentHTML = isMultiple
+    ? `<p class="confirm-banner-label">继续前请注意：</p>
+       <ul class="confirm-banner-list">${messages.map((m) => `<li>${escapeHTML(m)}</li>`).join("")}</ul>`
+    : `<p class="confirm-banner-msg">${escapeHTML(messages[0])}</p>`;
+
+  const banner = document.createElement("div");
+  banner.className = "confirm-banner";
+  banner.innerHTML = `<div class="confirm-banner-body">
+    ${contentHTML}
+    <div class="confirm-banner-actions">
+      <button class="btn btn-sm btn-warning confirm-banner-ok">确认继续</button>
+      <button class="btn btn-sm btn-ghost confirm-banner-cancel">取消</button>
+    </div>
+  </div>`;
+
+  if (mode === "prepend") {
+    refEl.prepend(banner);
+  } else {
+    refEl.parentNode.insertBefore(banner, refEl);
+  }
+  banner.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+  banner.querySelector(".confirm-banner-ok").addEventListener("click", () => {
+    banner.remove();
+    onConfirm();
+  });
+  banner.querySelector(".confirm-banner-cancel").addEventListener("click", () => {
+    banner.remove();
+  });
 }
 
 // ========== Toast 通知 ==========
@@ -422,9 +461,9 @@ function clearSession() {
 
 // ========== 示例需求 ==========
 const examples = {
-  新人弹窗送券: "用户首次打开APP时弹窗发放优惠券，引导用户下单。",
-  订单取消流程: "用户可以取消未发货的订单，取消后自动退款到原支付方式。",
-  会员签到奖励: "会员每日签到可获得积分奖励，连续签到天数越多奖励越高。",
+  搜索功能: "给平台加一个搜索功能，用户输入关键词能找到相关内容。",
+  消息通知中心: "做一个站内消息中心，用户可以收到系统通知、互动提醒等消息。",
+  角色权限管理: "做一套后台角色权限系统，不同角色能看到和操作的功能不同。",
 };
 
 // GROUP_ORDER 定义在 api.js 中（全局共享）
@@ -709,6 +748,11 @@ function closeSettings() {
 
 settingsBtn.addEventListener("click", openSettings);
 cancelKeyBtn.addEventListener("click", closeSettings);
+apiKeyBannerBtn.addEventListener("click", openSettings);
+
+function updateApiKeyBanner() {
+  apiKeyBanner.classList.toggle("hidden", !!getApiKey());
+}
 
 saveKeyBtn.addEventListener("click", () => {
   setProvider(providerSelect.value);
@@ -720,6 +764,7 @@ saveKeyBtn.addEventListener("click", () => {
   const selectedTheme = themeSelect.value;
   safeSetItem(STORAGE_KEYS.THEME, selectedTheme);
   applyTheme(selectedTheme);
+  updateApiKeyBanner();
   closeSettings();
 });
 
@@ -778,37 +823,41 @@ textarea.addEventListener("keydown", (e) => {
 
 generateBtn.addEventListener("click", async () => {
   if (isGenerating) return;
-  const text = textarea.value.trim();
+  document.querySelectorAll(".confirm-banner").forEach((b) => b.remove());
 
+  const text = textarea.value.trim();
   if (!text) {
     showToast("请先输入需求描述", "warning");
     return;
   }
-
-  const MAX_INPUT_LENGTH = 5000;
-  if (text.length > MAX_INPUT_LENGTH) {
-    if (!confirm(`输入内容较长（${text.length} 字），可能影响 AI 分析效果。是否继续？`)) return;
+  if (!getApiKey()) {
+    openSettings();
+    return;
   }
 
+  const MAX_INPUT_LENGTH = 5000;
+  const warnings = [];
+  if (text.length > MAX_INPUT_LENGTH) {
+    warnings.push(`输入内容较长（${text.length} 字），可能影响 AI 分析效果`);
+  }
+  const savedAnswers = JSON.parse(localStorage.getItem(STORAGE_KEYS.ANSWERS) || "{}");
+  const filledAnswerCount = Object.values(savedAnswers).filter((v) => String(v).trim()).length;
+  if (filledAnswerCount > 0) {
+    warnings.push(`当前已有 ${filledAnswerCount} 个填写的答案，重新分析将清空这些内容`);
+  }
+  if (lastFlowchartData || lastWireframeData || lastSequenceData) {
+    warnings.push("重新分析将清除已生成的流程图、页面结构说明和时序图");
+  }
+
+  if (warnings.length > 0) {
+    showConfirmBanner(generateBtn, warnings, () => doAnalyze(text));
+    return;
+  }
+  await doAnalyze(text);
+});
+
+async function doAnalyze(text) {
   try {
-    if (!getApiKey()) {
-      openSettings();
-      return;
-    }
-
-    // 如果已有用户填写的答案，提醒用户将被清除
-    const savedAnswers = JSON.parse(localStorage.getItem(STORAGE_KEYS.ANSWERS) || "{}");
-    const filledAnswerCount = Object.values(savedAnswers).filter(v => String(v).trim()).length;
-    if (filledAnswerCount > 0) {
-      if (!confirm(`当前已有 ${filledAnswerCount} 个填写的答案，重新分析将清空这些内容，是否继续？`)) return;
-    }
-
-    // 如果已有流程图或页面结构或时序图，提醒用户将被覆盖
-    if (lastFlowchartData || lastWireframeData || lastSequenceData) {
-      if (!confirm("重新分析将清除已生成的流程图、页面结构说明和时序图，是否继续？")) return;
-    }
-
-    // 切换到问题清单视图，重置终稿状态
     prdSection.classList.add("hidden");
     outputSection.classList.remove("hidden");
     isFinalPrd = false;
@@ -822,6 +871,7 @@ generateBtn.addEventListener("click", async () => {
     lastWireframeData = null;
     lastSequenceData = null;
     showLoading();
+    outputSection.scrollIntoView({ behavior: "smooth", block: "start" });
     isGenerating = true;
     showStreamingBar();
     setBtnGenerating(generateBtn, "分析中…");
@@ -852,31 +902,40 @@ generateBtn.addEventListener("click", async () => {
     clearBtnGenerating(generateBtn, "生成澄清问题");
     hideLoading();
   }
-});
+}
 
 // ========== 生成 PRD ==========
 
 generatePrdBtn.addEventListener("click", async () => {
   if (isGenerating) return;
+  document.querySelectorAll(".confirm-banner").forEach((b) => b.remove());
+
+  if (!getApiKey()) {
+    openSettings();
+    return;
+  }
+
+  const qaList = collectQAList();
+  const hasAnyAnswer = qaList.some((qa) => qa.answer);
+
+  const warnings = [];
+  if (!hasAnyAnswer) {
+    warnings.push("您尚未回答任何澄清问题，生成的 PRD 可能不够完整");
+  }
+  if (lastFlowchartData || lastWireframeData || lastSequenceData) {
+    warnings.push("重新生成 PRD 将清除已生成的流程图、页面结构说明和时序图");
+  }
+
+  if (warnings.length > 0) {
+    showConfirmBanner(generatePrdBtn, warnings, () => doGeneratePrd(qaList));
+    return;
+  }
+  await doGeneratePrd(qaList);
+});
+
+async function doGeneratePrd(qaList) {
+  lastQAList = qaList;
   try {
-    if (!getApiKey()) {
-      openSettings();
-      return;
-    }
-
-    const qaList = collectQAList();
-    const hasAnyAnswer = qaList.some((qa) => qa.answer);
-    if (!hasAnyAnswer) {
-      if (!confirm("您尚未回答任何澄清问题，生成的 PRD 可能不够完整。是否继续？")) return;
-    }
-    lastQAList = qaList;
-
-    // 如果已有流程图或页面结构或时序图，提醒用户将被覆盖
-    if (lastFlowchartData || lastWireframeData || lastSequenceData) {
-      if (!confirm("重新生成 PRD 将清除已生成的流程图、页面结构说明和时序图，是否继续？")) return;
-    }
-
-    // 清空评审状态，恢复标题
     exitPrdEditMode();
     lastReviewMarkdown = "";
     isFinalPrd = false;
@@ -891,7 +950,6 @@ generatePrdBtn.addEventListener("click", async () => {
     reviewSection.classList.add("hidden");
     prdSection.querySelector(".output-header h2").textContent = "PRD 文档预览";
 
-    // 切换到 PRD 视图
     transitionSection(outputSection, prdSection);
     updateStepIndicator("prd");
     prdContent.innerHTML = "";
@@ -900,7 +958,6 @@ generatePrdBtn.addEventListener("click", async () => {
     showStreamingBar();
     setBtnGenerating(generatePrdBtn, "生成中…");
 
-    // 流式渲染：每收到新内容就更新预览
     prdLoading.classList.add("hidden");
     const markdown = await generatePRDWithAI(lastInput, qaList, (_delta, accumulated) => {
       prdContent.innerHTML = renderMarkdownToHTML(accumulated);
@@ -908,7 +965,6 @@ generatePrdBtn.addEventListener("click", async () => {
     lastPrdMarkdown = markdown;
     prdManuallyEdited = false;
 
-    // 最终完整渲染一次，确保格式正确
     prdContent.innerHTML = renderMarkdownToHTML(markdown);
     prdEditBtn.classList.remove("hidden");
     saveSession();
@@ -921,7 +977,7 @@ generatePrdBtn.addEventListener("click", async () => {
     prdLoading.classList.add("hidden");
     clearBtnGenerating(generatePrdBtn, "生成 PRD 文档");
   }
-});
+}
 
 // ========== 继续追问 ==========
 
@@ -1215,17 +1271,26 @@ generateFinalPrdBtn.addEventListener("click", async () => {
 
 newSessionBtn.addEventListener("click", () => {
   if (isGenerating) return;
+  document.querySelectorAll(".confirm-banner").forEach((b) => b.remove());
 
   const hasData = lastResult || lastPrdMarkdown || lastReviewMarkdown || lastFlowchartData || lastWireframeData || lastSequenceData;
-  if (hasData && !confirm("将清空当前工作区的所有内容，是否继续？")) return;
+  if (hasData) {
+    const activeCard =
+      (prdSection && !prdSection.classList.contains("hidden") && prdSection.querySelector(".card")) ||
+      (outputSection && !outputSection.classList.contains("hidden") && outputSection.querySelector(".card")) ||
+      document.querySelector(".input-section .card");
+    showConfirmBanner(activeCard, ["将清空当前工作区的所有内容"], doNewSession, { mode: "prepend" });
+    return;
+  }
+  doNewSession();
+});
 
-  // 清除 localStorage
+function doNewSession() {
   clearSession();
   localStorage.removeItem(STORAGE_KEYS.INPUT);
   localStorage.removeItem(STORAGE_KEYS.RESULT);
   localStorage.removeItem(STORAGE_KEYS.ANSWERS);
 
-  // 重置状态变量
   lastResult = null;
   lastInput = "";
   lastPrdMarkdown = "";
@@ -1238,11 +1303,9 @@ newSessionBtn.addEventListener("click", () => {
   lastSequenceData = null;
   currentTemplate = "general";
 
-  // 退出编辑模式（如果在编辑中）
   exitPrdEditMode();
   prdEditBtn.classList.add("hidden");
 
-  // 重置 UI
   textarea.value = "";
   output.innerHTML = "";
   prdContent.innerHTML = "";
@@ -1271,7 +1334,7 @@ newSessionBtn.addEventListener("click", () => {
   updateStepIndicator("input");
 
   textarea.focus();
-});
+}
 
 // ========== 复制问题清单 ==========
 
@@ -1412,10 +1475,12 @@ historyList.addEventListener("click", (e) => {
 });
 
 historyClearBtn.addEventListener("click", () => {
-  if (!confirm("确定要清空所有历史记录吗？此操作不可恢复。")) return;
-  localStorage.removeItem(STORAGE_KEYS.HISTORY);
-  _storageWarningShown = false;
-  renderHistory();
+  document.querySelectorAll(".confirm-banner").forEach((b) => b.remove());
+  showConfirmBanner(historyClearBtn, ["确定要清空所有历史记录吗？此操作不可恢复。"], () => {
+    localStorage.removeItem(STORAGE_KEYS.HISTORY);
+    _storageWarningShown = false;
+    renderHistory();
+  });
 });
 
 // ========== 流程图 ==========
@@ -2034,8 +2099,4 @@ exportHtmlBtn.addEventListener("click", () => {
 
 // ========== 首次运行检测 ==========
 
-(function checkFirstRun() {
-  if (!getApiKey()) {
-    setTimeout(openSettings, 500);
-  }
-})();
+updateApiKeyBanner();
