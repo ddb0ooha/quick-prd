@@ -186,6 +186,7 @@ async function streamAI(messages, options = {}) {
     }
   } finally {
     clearTimeout(timeoutTimer);
+    try { reader.cancel(); } catch (_) {}
   }
 
   return accumulated;
@@ -291,7 +292,7 @@ async function reviewPRDWithAI(originalText, qaList, prdMarkdown, onChunk, templ
  * @param {function} [onChunk] - 流式回调
  * @returns {Promise<string>} - 最终版 PRD Markdown
  */
-async function generateFinalPRDWithAI(originalText, qaList, prdMarkdown, reviewMarkdown, reviewAnswers, onChunk) {
+async function generateFinalPRDWithAI(originalText, qaList, prdMarkdown, reviewMarkdown, reviewAnswers, templateKey, onChunk) {
   let userContent = `## 原始需求描述\n\n${originalText}\n\n`;
 
   userContent += `## 澄清问答\n\n`;
@@ -315,9 +316,12 @@ async function generateFinalPRDWithAI(originalText, qaList, prdMarkdown, reviewM
     }
   }
 
+  const patch = getTemplatePatch(templateKey);
+  const systemPrompt = getPromptWithTemplate(FINAL_PRD_SYSTEM_PROMPT, patch.prdPatch);
+
   return streamAI(
     [
-      { role: "system", content: FINAL_PRD_SYSTEM_PROMPT },
+      { role: "system", content: systemPrompt },
       { role: "user", content: userContent },
     ],
     { onChunk }

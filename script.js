@@ -255,6 +255,7 @@ function showToast(message, type = "success", duration = 2500) {
   const container = document.getElementById("toast-container");
   const el = document.createElement("div");
   el.className = `toast-item toast-${type}`;
+  el.setAttribute("role", type === "error" ? "alert" : "status");
   el.textContent = message;
   container.appendChild(el);
   setTimeout(() => {
@@ -1157,6 +1158,7 @@ followupBtn.addEventListener("click", async () => {
       output.appendChild(card);
       bindQuestionInteractions(card);
     });
+    updateAnswerProgress();
 
     followupDone = true;
     followupBtn.classList.add("hidden");
@@ -1371,6 +1373,7 @@ generateFinalPrdBtn.addEventListener("click", async () => {
       lastPrdMarkdown,
       lastReviewMarkdown,
       reviewAnswers,
+      currentTemplate,
       (_delta, accumulated) => {
         prdContent.innerHTML = renderMarkdownToHTML(accumulated);
       }
@@ -1385,6 +1388,7 @@ generateFinalPrdBtn.addEventListener("click", async () => {
     isFinalPrd = true;
     lastReviewMarkdown = "";
     prdManuallyEdited = false;
+    prdReviewBtn.classList.add("hidden");
 
     // 显示附加操作按钮（流程图 + 页面结构说明）
     prdExtraActions.classList.remove("hidden");
@@ -1469,6 +1473,7 @@ function doNewSession() {
   exportBtn.classList.add("hidden");
   followupBtn.classList.add("hidden");
   generatePrdBtn.classList.add("hidden");
+  prdReviewBtn.classList.remove("hidden");
   followupDone = false;
 
   templateSelect.value = "general";

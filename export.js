@@ -348,13 +348,13 @@ strong { font-weight: 600; }
   if (options.includeFlowchart && flowchartData && flowchartData.needed && flowchartData.charts.length > 0) {
     body += `<hr>\n<h2>业务流程图</h2>\n`;
     flowchartData.charts.forEach((chart, index) => {
-      body += `<h3>${chart.title}</h3>\n`;
+      body += `<h3>${escapeHTML(chart.title)}</h3>\n`;
       const svgHtml = extractSVG(`mermaid-chart-${index}`);
       if (svgHtml) {
         body += `<div class="diagram">${svgHtml}</div>\n`;
       } else {
         needsCDN = true;
-        body += `<div class="diagram"><pre class="mermaid">${chart.mermaid}</pre></div>\n`;
+        body += `<div class="diagram"><pre class="mermaid">${escapeHTML(chart.mermaid)}</pre></div>\n`;
       }
     });
   }
@@ -362,8 +362,8 @@ strong { font-weight: 600; }
   if (options.includeWireframe && wireframeData && wireframeData.needed && wireframeData.pages.length > 0) {
     body += `<hr>\n<h2>页面结构说明</h2>\n`;
     wireframeData.pages.forEach((page) => {
-      body += `<h3>${page.name}</h3>\n`;
-      if (page.entry) body += `<p><strong>入口</strong>：${page.entry}</p>\n`;
+      body += `<h3>${escapeHTML(page.name)}</h3>\n`;
+      if (page.entry) body += `<p><strong>入口</strong>：${escapeHTML(page.entry)}</p>\n`;
       body += renderMarkdownToHTML(page.structure) + "\n";
     });
   }
@@ -371,13 +371,13 @@ strong { font-weight: 600; }
   if (options.includeSequence && sequenceData && sequenceData.needed && sequenceData.diagrams.length > 0) {
     body += `<hr>\n<h2>时序图</h2>\n`;
     sequenceData.diagrams.forEach((diagram, index) => {
-      body += `<h3>${diagram.title}</h3>\n`;
+      body += `<h3>${escapeHTML(diagram.title)}</h3>\n`;
       const svgHtml = extractSVG(`sequence-chart-${index}`);
       if (svgHtml) {
         body += `<div class="diagram">${svgHtml}</div>\n`;
       } else {
         needsCDN = true;
-        body += `<div class="diagram"><pre class="mermaid">${diagram.mermaid}</pre></div>\n`;
+        body += `<div class="diagram"><pre class="mermaid">${escapeHTML(diagram.mermaid)}</pre></div>\n`;
       }
     });
   }

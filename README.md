@@ -136,8 +136,8 @@ npx http-server -p 8080
 - 全链路流式输出（SSE），实时渲染 AI 响应
 - 会话状态全量持久化到 localStorage，刷新页面自动恢复到最近工作阶段；localStorage 写入异常时通过 Toast 提示用户清理空间
 - API Key 仅存储在浏览器 localStorage，不上传任何服务器
-- XSS 防护：所有动态内容经过 HTML 转义
+- XSS 防护：所有动态内容经过 HTML 转义，包括 AI 返回的流程图/页面结构/时序图标题、入口说明等字段在导出 HTML 时均经过 `escapeHTML` 处理
 - Mermaid.js v10（CDN）渲染业务流程图与时序图，顺序渲染避免 ID 冲突，支持渲染失败 fallback 到源码查看
 - Clipboard 降级：兼容 file:// 协议下的复制操作，失败时给出明确反馈
 - 模态框动画：fade + scale 过渡，transitionend 事件驱动 + setTimeout 兜底
-- 可访问性：WCAG AA 色彩对比度、`:focus-visible` 焦点样式、`prefers-reduced-motion` 减弱动效、ARIA 语义标注
+- 可访问性：WCAG AA 色彩对比度、`:focus-visible` 焦点样式、`prefers-reduced-motion` 减弱动效、ARIA 语义标注；模态框含 `role="dialog"` + `aria-modal` + `aria-labelledby`；Toast 通知含 `role="alert"/"status"`

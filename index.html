@@ -298,10 +298,10 @@
   </div>
 
   <!-- ===== 历史记录弹窗 ===== -->
-  <div id="history-modal" class="modal-overlay hidden">
+  <div id="history-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="history-modal-title">
     <div class="modal modal-lg">
       <div class="modal-header-row">
-        <h3>历史记录</h3>
+        <h3 id="history-modal-title">历史记录</h3>
         <button id="history-clear-btn" class="btn-text-danger">清空</button>
       </div>
       <div id="history-list" class="history-list">
@@ -317,9 +317,9 @@
   </div>
 
   <!-- ===== 导出全套文档弹窗 ===== -->
-  <div id="export-all-modal" class="modal-overlay hidden">
+  <div id="export-all-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="export-modal-title">
     <div class="modal modal-sm">
-      <h3>导出全套文档</h3>
+      <h3 id="export-modal-title">导出全套文档</h3>
       <p class="modal-hint">选择要包含在导出文档中的内容：</p>
       <div class="export-options">
         <label class="checkbox-label">
@@ -353,9 +353,9 @@
   </div>
 
   <!-- ===== 设置弹窗 ===== -->
-  <div id="settings-modal" class="modal-overlay hidden">
+  <div id="settings-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
     <div class="modal">
-      <h3>API 设置</h3>
+      <h3 id="settings-modal-title">API 设置</h3>
       <label for="provider-select">API 提供商</label>
       <select id="provider-select">
         <option value="deepseek">DeepSeek（直连）</option>
