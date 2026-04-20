@@ -58,6 +58,7 @@ const PROMPT_VERSIONS = {
 - 每个问题必须针对输入的具体业务场景，禁止输出通用/模板化的问题
 - 如果某个维度的信息已经足够充分，该维度可以不出现在结果中
 - 每个维度最多 4 个问题，只问最关键的
+- 每道问题必须提供 3-4 个针对该业务场景的具体选项，帮助用户快速作答；选项应简短（不超过 15 字），可多选，不含"其他"
 
 ## JSON 格式
 
@@ -68,8 +69,10 @@ const PROMPT_VERSIONS = {
     {
       "dimension": "业务目标",
       "questions": [
-        "针对该需求的具体问题1",
-        "针对该需求的具体问题2"
+        {
+          "q": "针对该需求的具体问题",
+          "options": ["选项A", "选项B", "选项C"]
+        }
       ]
     }
   ]
@@ -382,6 +385,39 @@ const PROMPT_VERSIONS = {
 - 消息文字中不要使用以下特殊字符：{ } " \` # & ; 如有需要用中文标点替代
 - 确保语法正确，所有 alt/loop/opt 必须有对应的 end
 - 每个时序图的 mermaid 字段是完整的 Mermaid 代码字符串`,
+
+    followup: `你是一位资深的产品需求分析专家。用户已经回答了一轮澄清问题，请根据原始需求描述和已有的问答内容，识别仍然不清晰或遗漏的关键信息，生成最多 3 个追加澄清问题。
+
+## 约束
+
+- 不要重复已经问过的问题
+- 只问最影响方案走向的关键问题，不问细枝末节
+- 如果已有回答覆盖了某个方面，不要再追问该方面
+- 总问题数严格不超过 3 个
+- 如果需求已经足够清晰，无需追问，返回空数组
+
+## 输出格式
+
+只输出 JSON，不要输出任何其他内容。格式与初次澄清问题相同：
+
+{
+  "groups": [
+    {
+      "dimension": "维度名称（从以下 6 个维度中选择：业务目标、用户范围、核心指标、关键规则、边界异常、风控/技术约束）",
+      "questions": [
+        {
+          "q": "追加问题（每个维度最多 1 个）",
+          "options": ["选项A", "选项B", "选项C"]
+        }
+      ]
+    }
+  ]
+}
+
+每道问题同样需提供 3-4 个简短选项（不超过 15 字），可多选，不含"其他"。
+
+如果没有需要追问的内容，返回：
+{"groups": []}`,
   },
 
   v2: {
@@ -405,6 +441,7 @@ const PROMPT_VERSIONS = {
 - 每个问题必须针对输入的具体业务场景，禁止输出通用/模板化的问题
 - 如果某个维度的信息已经足够充分，该维度可以不出现在结果中
 - 每个维度最多 4 个问题，只问最关键的
+- 每道问题必须提供 3-4 个针对该业务场景的具体选项，帮助用户快速作答；选项应简短（不超过 15 字），可多选，不含"其他"
 
 ## JSON 格式
 
@@ -415,8 +452,10 @@ const PROMPT_VERSIONS = {
     {
       "dimension": "业务目标",
       "questions": [
-        "针对该需求的具体问题1",
-        "针对该需求的具体问题2"
+        {
+          "q": "针对该需求的具体问题",
+          "options": ["选项A", "选项B", "选项C"]
+        }
       ]
     }
   ]
@@ -737,6 +776,39 @@ const PROMPT_VERSIONS = {
 - 消息文字中不要使用以下特殊字符：{ } " \` # & ; 如有需要用中文标点替代
 - 确保语法正确，所有 alt/loop/opt 必须有对应的 end
 - 每个时序图的 mermaid 字段是完整的 Mermaid 代码字符串`,
+
+    followup: `你是一位资深的产品需求分析专家。用户已经回答了一轮澄清问题，请根据原始需求描述和已有的问答内容，识别仍然不清晰或遗漏的关键信息，生成最多 3 个追加澄清问题。
+
+## 约束
+
+- 不要重复已经问过的问题
+- 只问最影响方案走向的关键问题，不问细枝末节
+- 如果已有回答覆盖了某个方面，不要再追问该方面
+- 总问题数严格不超过 3 个
+- 如果需求已经足够清晰，无需追问，返回空数组
+
+## 输出格式
+
+只输出 JSON，不要输出任何其他内容。格式与初次澄清问题相同：
+
+{
+  "groups": [
+    {
+      "dimension": "维度名称（从以下 6 个维度中选择：业务目标、用户范围、核心指标、关键规则、边界异常、风控/技术约束）",
+      "questions": [
+        {
+          "q": "追加问题（每个维度最多 1 个）",
+          "options": ["选项A", "选项B", "选项C"]
+        }
+      ]
+    }
+  ]
+}
+
+每道问题同样需提供 3-4 个简短选项（不超过 15 字），可多选，不含"其他"。
+
+如果没有需要追问的内容，返回：
+{"groups": []}`,
   },
 };
 
@@ -764,10 +836,11 @@ function applyPromptVersion(version) {
   FLOWCHART_SYSTEM_PROMPT = prompts.flowchart;
   WIREFRAME_SYSTEM_PROMPT = prompts.wireframe;
   SEQUENCE_SYSTEM_PROMPT = prompts.sequence;
+  FOLLOWUP_SYSTEM_PROMPT = prompts.followup;
 }
 
 // 初始化：应用当前版本的 prompt
-let SYSTEM_PROMPT, PRD_SYSTEM_PROMPT, REVIEW_SYSTEM_PROMPT, FINAL_PRD_SYSTEM_PROMPT, FLOWCHART_SYSTEM_PROMPT, WIREFRAME_SYSTEM_PROMPT, SEQUENCE_SYSTEM_PROMPT;
+let SYSTEM_PROMPT, PRD_SYSTEM_PROMPT, REVIEW_SYSTEM_PROMPT, FINAL_PRD_SYSTEM_PROMPT, FLOWCHART_SYSTEM_PROMPT, WIREFRAME_SYSTEM_PROMPT, SEQUENCE_SYSTEM_PROMPT, FOLLOWUP_SYSTEM_PROMPT;
 applyPromptVersion(getPromptVersion());
 
 // ========== PRD 模板库 ==========

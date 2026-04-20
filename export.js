@@ -42,7 +42,8 @@ function generateMarkdown(originalText, grouped, qaList) {
     for (const groupName of activeGroups) {
       md += `### ${groupName}\n\n`;
       grouped[groupName].forEach((q, i) => {
-        md += `${i + 1}. ${q}\n`;
+        const qText = typeof q === "string" ? q : q.q;
+        md += `${i + 1}. ${qText}\n`;
       });
       md += `\n`;
     }
@@ -68,8 +69,9 @@ function generateMarkdown(originalText, grouped, qaList) {
     for (const groupName of activeGroups) {
       md += `### ${groupName}\n\n`;
       grouped[groupName].forEach((q, i) => {
-        md += `**${i + 1}. ${q}**\n\n`;
-        const answer = answerMap[`${groupName}::${q}`];
+        const qText = typeof q === "string" ? q : q.q;
+        md += `**${i + 1}. ${qText}**\n\n`;
+        const answer = answerMap[`${groupName}::${qText}`];
         md += answer ? `答：${answer}\n\n` : `答：\n\n`;
       });
     }

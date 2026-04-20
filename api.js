@@ -399,6 +399,31 @@ async function generateSequenceWithAI(finalPrdMarkdown, onProgress) {
   );
 }
 
+// ========== 追加澄清问题（流式） ==========
+
+async function generateFollowupQuestionsWithAI(originalText, qaList, onProgress) {
+  let userContent = `## 原始需求描述\n\n${originalText}\n\n## 已有澄清问答\n\n`;
+  for (const qa of qaList) {
+    userContent += `**[${qa.group}] ${qa.question}**\n`;
+    userContent += qa.answer
+      ? `答：${qa.answer}\n\n`
+      : `答：（未回答）\n\n`;
+  }
+
+  return streamAI(
+    [
+      { role: "system", content: FOLLOWUP_SYSTEM_PROMPT },
+      { role: "user", content: userContent },
+    ],
+    {
+      responseFormat: { type: "json_object" },
+      onChunk: onProgress
+        ? (_delta, full) => onProgress(full.length)
+        : undefined,
+    }
+  );
+}
+
 // ========== 响应解析 ==========
 
 /**
@@ -425,7 +450,11 @@ function parseAIResponse(jsonText) {
   if (parsed.groups && Array.isArray(parsed.groups)) {
     for (const group of parsed.groups) {
       if (group.questions && group.questions.length > 0) {
-        grouped[group.dimension] = group.questions;
+        grouped[group.dimension] = group.questions.map((item) =>
+          typeof item === "string"
+            ? { q: item, options: [] }
+            : { q: item.q || item, options: Array.isArray(item.options) ? item.options : [] }
+        );
       }
     }
   }

@@ -1126,6 +1126,95 @@ select:focus,
   margin-bottom: var(--space-6);
 }
 
+/* ========== 问题选项 Chip ========== */
+
+.option-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.option-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 4px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-card);
+  cursor: pointer;
+  user-select: none;
+  transition: border-color var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
+}
+
+.option-chip input[type="checkbox"] {
+  display: none;
+}
+
+.option-chip:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.option-chip.selected {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.option-other-toggle {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border: 1px dashed var(--color-border);
+  border-radius: 20px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  background: transparent;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.option-other-toggle:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.option-other-input {
+  margin-top: var(--space-2);
+  width: 100%;
+}
+
+/* 深色模式适配 */
+[data-theme="dark"] .option-chip {
+  background: var(--color-bg-hover);
+}
+
+[data-theme="dark"] .option-chip.selected {
+  background: var(--color-primary);
+}
+
+/* 追问分隔符 */
+.followup-separator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-5) 0 var(--space-4);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.followup-separator::before,
+.followup-separator::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--color-border-light);
+}
+
 /* 问题清单卡片 */
 .group-card {
   background: var(--color-bg-card);

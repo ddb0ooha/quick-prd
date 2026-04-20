@@ -18,6 +18,9 @@ const providerLink = document.getElementById("provider-link");
 const promptVersionSelect = document.getElementById("prompt-version-select");
 const themeSelect = document.getElementById("theme-select");
 
+// 追问相关
+const followupBtn = document.getElementById("followup-btn");
+
 // PRD 相关
 const generatePrdBtn = document.getElementById("generate-prd-btn");
 const backToFinalPrdBtn = document.getElementById("back-to-final-prd-btn");
@@ -325,6 +328,7 @@ function copyToClipboard(text) {
 let lastResult = null;
 let lastInput = "";
 let lastPrdMarkdown = "";
+let followupDone = false;
 let lastReviewMarkdown = "";
 let lastQAList = [];
 let isFinalPrd = false;
@@ -355,8 +359,34 @@ function restoreAnswers() {
   try {
     const answers = JSON.parse(saved);
     for (const [id, value] of Object.entries(answers)) {
-      const el = document.getElementById(id);
-      if (el) el.value = value;
+      const hiddenInput = document.getElementById(id);
+      if (!hiddenInput || !value) continue;
+      hiddenInput.value = value;
+
+      const li = hiddenInput.closest("li");
+      if (!li) continue;
+      const otherTextarea = li.querySelector(".option-other-input");
+      const chips = li.querySelectorAll(".option-chip");
+
+      if (chips.length > 0) {
+        // 解析 "选项A、选项B；其他：手动内容" 格式
+        const [chipPart, manualPart] = value.split("；其他：");
+        const selectedTexts = chipPart ? chipPart.split("、") : [];
+        chips.forEach((chip) => {
+          if (selectedTexts.includes(chip.querySelector("input").value)) {
+            chip.classList.add("selected");
+            chip.querySelector("input").checked = true;
+          }
+        });
+        if (manualPart && otherTextarea) {
+          otherTextarea.value = manualPart;
+          otherTextarea.classList.remove("hidden");
+          autoResize(otherTextarea);
+        }
+      } else if (otherTextarea) {
+        otherTextarea.value = value;
+        autoResize(otherTextarea);
+      }
     }
   } catch (_) {}
 }
@@ -399,7 +429,87 @@ const examples = {
 
 // GROUP_ORDER 定义在 api.js 中（全局共享）
 
-// ========== 渲染（问题清单 + 答案输入框） ==========
+// ========== 问题条目渲染辅助 ==========
+
+function renderQuestionItem(q, id, groupName) {
+  const qText = typeof q === "string" ? q : q.q;
+  const options = typeof q === "string" ? [] : (q.options || []);
+  const safeQ = escapeHTML(qText);
+  const safeGroup = escapeHTML(groupName);
+
+  const chipsHTML = options.length > 0
+    ? `<div class="option-group">
+        ${options.map(opt => `<label class="option-chip"><input type="checkbox" value="${escapeHTML(opt)}"><span>${escapeHTML(opt)}</span></label>`).join("")}
+        <button type="button" class="option-other-toggle">✏ 其他</button>
+      </div>
+      <textarea class="option-other-input input-base hidden" placeholder="手动补充（可留空）" rows="1"></textarea>`
+    : `<textarea class="option-other-input input-base" placeholder="填写补充信息（可留空）" rows="1"></textarea>`;
+
+  return `<li>
+    <span class="question-text">${safeQ}</span>
+    ${chipsHTML}
+    <input type="hidden" class="answer-input" id="${id}" data-group="${safeGroup}" data-question="${safeQ}">
+  </li>`;
+}
+
+function bindQuestionInteractions(container) {
+  container.querySelectorAll("li").forEach((li) => {
+    const hiddenInput = li.querySelector(".answer-input");
+    if (!hiddenInput || hiddenInput.dataset.bound) return;
+    hiddenInput.dataset.bound = "1";
+
+    const chips = li.querySelectorAll(".option-chip");
+    const otherToggle = li.querySelector(".option-other-toggle");
+    const otherTextarea = li.querySelector(".option-other-input");
+
+    function composeAndSave() {
+      const selected = [...li.querySelectorAll(".option-chip.selected")]
+        .map((chip) => chip.querySelector("input").value);
+      const manual = otherTextarea ? otherTextarea.value.trim() : "";
+      let answer = selected.join("、");
+      if (manual) answer = answer ? `${answer}；其他：${manual}` : manual;
+      hiddenInput.value = answer;
+      saveAnswers();
+    }
+
+    chips.forEach((chip) => {
+      chip.addEventListener("click", () => {
+        chip.classList.toggle("selected");
+        chip.querySelector("input").checked = chip.classList.contains("selected");
+        composeAndSave();
+        if (otherTextarea) showSavedIndicator(otherTextarea);
+      });
+    });
+
+    if (otherToggle && otherTextarea) {
+      otherToggle.addEventListener("click", () => {
+        otherTextarea.classList.toggle("hidden");
+        if (!otherTextarea.classList.contains("hidden")) {
+          otherTextarea.focus();
+          autoResize(otherTextarea);
+        }
+      });
+      let saveTimer;
+      otherTextarea.addEventListener("input", () => {
+        autoResize(otherTextarea);
+        composeAndSave();
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(() => showSavedIndicator(otherTextarea), 600);
+      });
+    } else if (otherTextarea) {
+      let saveTimer;
+      otherTextarea.addEventListener("input", () => {
+        hiddenInput.value = otherTextarea.value.trim();
+        autoResize(otherTextarea);
+        saveAnswers();
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(() => showSavedIndicator(otherTextarea), 600);
+      });
+    }
+  });
+}
+
+// ========== 渲染（问题清单 + 选项 UI） ==========
 
 function render(grouped) {
   const groups = GROUP_ORDER.filter(
@@ -418,41 +528,21 @@ function render(grouped) {
   output.innerHTML = groups
     .map((groupName) => {
       const items = grouped[groupName]
-        .map((q) => {
-          const id = `answer-${qIndex++}`;
-          const safeQ = escapeHTML(q);
-          const safeGroup = escapeHTML(groupName);
-          return `<li>
-            <span class="question-text">${safeQ}</span>
-            <textarea class="input-base answer-input" id="${id}" data-group="${safeGroup}" data-question="${safeQ}" placeholder="填写补充信息（可留空）" rows="1"></textarea>
-          </li>`;
-        })
+        .map((q) => renderQuestionItem(q, `answer-${qIndex++}`, groupName))
         .join("");
-      return `
-        <div class="group-card">
-          <h3>${groupName}</h3>
-          <ol>${items}</ol>
-        </div>`;
+      return `<div class="group-card"><h3>${groupName}</h3><ol>${items}</ol></div>`;
     })
     .join("");
 
   exportBtn.classList.remove("hidden");
   generatePrdBtn.classList.remove("hidden");
+  if (!followupDone) followupBtn.classList.remove("hidden");
 
   // 恢复已保存的答案
   restoreAnswers();
 
-  // 绑定答案自动保存 + 自动扩展高度
-  output.querySelectorAll(".answer-input").forEach((el) => {
-    let saveIndicatorTimer;
-    el.addEventListener("input", () => {
-      saveAnswers();
-      autoResize(el);
-      clearTimeout(saveIndicatorTimer);
-      saveIndicatorTimer = setTimeout(() => showSavedIndicator(el), 600);
-    });
-    autoResize(el);
-  });
+  // 绑定交互
+  bindQuestionInteractions(output);
 }
 
 function showLoading() {
@@ -467,6 +557,7 @@ function showLoading() {
   loading.classList.remove("hidden");
   output.innerHTML = "";
   exportBtn.classList.add("hidden");
+  followupBtn.classList.add("hidden");
   generatePrdBtn.classList.add("hidden");
 }
 
@@ -832,6 +923,63 @@ generatePrdBtn.addEventListener("click", async () => {
   }
 });
 
+// ========== 继续追问 ==========
+
+followupBtn.addEventListener("click", async () => {
+  if (isGenerating) return;
+  if (!getApiKey()) {
+    openModal(settingsModal);
+    return;
+  }
+
+  const qaList = collectQAList();
+  isGenerating = true;
+  showStreamingBar();
+  setBtnGenerating(followupBtn, "追问中…");
+
+  try {
+    const rawJson = await generateFollowupQuestionsWithAI(lastInput, qaList);
+    const grouped = parseAIResponse(rawJson);
+    const newGroups = Object.keys(grouped);
+
+    if (newGroups.length === 0) {
+      showToast("需求已足够清晰，暂无需追加的问题", "success", 3000);
+      followupDone = true;
+      followupBtn.classList.add("hidden");
+      return;
+    }
+
+    // append separator
+    const sep = document.createElement("div");
+    sep.className = "followup-separator";
+    sep.innerHTML = '<span>追加问题</span>';
+    output.appendChild(sep);
+
+    // append new question groups
+    let qIndex = output.querySelectorAll(".answer-input").length;
+    newGroups.forEach((groupName) => {
+      const items = grouped[groupName]
+        .map((q) => renderQuestionItem(q, `answer-${qIndex++}`, groupName))
+        .join("");
+      const card = document.createElement("div");
+      card.className = "group-card";
+      card.innerHTML = `<h3>${escapeHTML(groupName)}</h3><ol>${items}</ol>`;
+      output.appendChild(card);
+      bindQuestionInteractions(card);
+    });
+
+    followupDone = true;
+    followupBtn.classList.add("hidden");
+    showToast("追加问题已生成，填写后可继续生成 PRD", "success", 3000);
+  } catch (error) {
+    showError(error, output);
+  } finally {
+    isGenerating = false;
+    hideStreamingBar();
+    clearBtnGenerating(followupBtn, "继续追问（最多 3 题）");
+  }
+});
+
 // ========== PRD 操作按钮 ==========
 
 prdBackBtn.addEventListener("click", () => {
@@ -1114,7 +1262,9 @@ newSessionBtn.addEventListener("click", () => {
   prdExtraActions.classList.add("hidden");
   backToFinalPrdBtn.classList.add("hidden");
   exportBtn.classList.add("hidden");
+  followupBtn.classList.add("hidden");
   generatePrdBtn.classList.add("hidden");
+  followupDone = false;
 
   templateSelect.value = "general";
   prdSection.querySelector(".output-header h2").textContent = "PRD 文档预览";
