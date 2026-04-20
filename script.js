@@ -83,6 +83,12 @@ const exportFormatToggle = document.getElementById("export-format-toggle");
 const exportFormatMenu = document.getElementById("export-format-menu");
 const exportHtmlBtn = document.getElementById("export-html-btn");
 
+// 需求输入折叠摘要条
+const inputSummary = document.getElementById("input-summary");
+const inputSummaryText = document.getElementById("input-summary-text");
+const inputFullContent = document.getElementById("input-full-content");
+const inputExpandBtn = document.getElementById("input-expand-btn");
+
 // 新建会话
 const newSessionBtn = document.getElementById("new-session-btn");
 
@@ -117,6 +123,36 @@ window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () 
 });
 
 // ========== 工具函数 ==========
+
+const TEMPLATE_LABELS = { general: "通用需求", marketing: "营销活动", ecommerce: "电商交易", admin: "后台管理" };
+
+function collapseInputSection() {
+  const text = lastInput || textarea.value;
+  const preview = text.slice(0, 50) + (text.length > 50 ? "…" : "");
+  const label = TEMPLATE_LABELS[currentTemplate] || "通用需求";
+  inputSummaryText.textContent = "";
+  const tag = document.createElement("span");
+  tag.className = "input-summary-tag";
+  tag.textContent = label;
+  const previewSpan = document.createElement("span");
+  previewSpan.className = "summary-preview";
+  previewSpan.textContent = preview;
+  inputSummaryText.appendChild(tag);
+  inputSummaryText.appendChild(previewSpan);
+  inputSummary.classList.remove("hidden");
+  inputFullContent.classList.add("hidden");
+}
+
+function expandInputSection() {
+  inputSummary.classList.add("hidden");
+  inputFullContent.classList.remove("hidden");
+}
+
+inputExpandBtn.addEventListener("click", () => {
+  expandInputSection();
+  textarea.focus();
+  document.querySelector(".input-section").scrollIntoView({ behavior: "smooth" });
+});
 
 function showSavedIndicator(el) {
   el.parentNode.querySelector(".saved-indicator")?.remove();
@@ -267,6 +303,51 @@ function updateStepIndicator(currentStep) {
   });
 }
 
+document.getElementById("step-indicator").addEventListener("click", (e) => {
+  if (isGenerating) return;
+  const stepEl = e.target.closest(".step.completed");
+  if (!stepEl) return;
+
+  const step = stepEl.dataset.step;
+  const prdVisible = !prdSection.classList.contains("hidden");
+  const outputVisible = !outputSection.classList.contains("hidden");
+
+  if (step === "input") {
+    expandInputSection();
+    document.querySelector(".input-section").scrollIntoView({ behavior: "smooth" });
+  } else if (step === "clarify") {
+    if (prdVisible) {
+      transitionSection(prdSection, outputSection);
+      updateStepIndicator("clarify");
+    } else {
+      outputSection.scrollIntoView({ behavior: "smooth" });
+    }
+  } else if (step === "prd") {
+    if (outputVisible) {
+      transitionSection(outputSection, prdSection);
+      updateStepIndicator("prd");
+    } else {
+      prdSection.scrollIntoView({ behavior: "smooth" });
+    }
+  } else if (step === "review") {
+    if (!prdVisible) {
+      transitionSection(outputSection, prdSection);
+      updateStepIndicator("review");
+      setTimeout(() => reviewSection.scrollIntoView({ behavior: "smooth" }), 320);
+    } else {
+      reviewSection.scrollIntoView({ behavior: "smooth" });
+    }
+  } else if (step === "artifacts") {
+    if (!prdVisible) {
+      transitionSection(outputSection, prdSection);
+      updateStepIndicator("artifacts");
+      setTimeout(() => prdExtraActions.scrollIntoView({ behavior: "smooth" }), 320);
+    } else {
+      prdExtraActions.scrollIntoView({ behavior: "smooth" });
+    }
+  }
+});
+
 // ========== 工作流切换过渡 ==========
 
 function transitionSection(hideEl, showEl) {
@@ -381,6 +462,18 @@ let prdManuallyEdited = false;
 
 // ========== 答案持久化 ==========
 
+function updateAnswerProgress() {
+  const progressEl = document.getElementById("answer-progress");
+  if (!progressEl) return;
+  const inputs = [...output.querySelectorAll(".answer-input")];
+  const total = inputs.length;
+  if (total === 0) { progressEl.classList.add("hidden"); return; }
+  const filled = inputs.filter(i => i.value.trim() !== "").length;
+  progressEl.textContent = `已填写 ${filled} / ${total} 题`;
+  progressEl.classList.remove("hidden");
+  progressEl.classList.toggle("answer-progress--complete", filled === total);
+}
+
 function saveAnswers() {
   const inputs = output.querySelectorAll(".answer-input");
   const answers = {};
@@ -390,6 +483,7 @@ function saveAnswers() {
     }
   });
   safeSetItem(STORAGE_KEYS.ANSWERS, JSON.stringify(answers));
+  updateAnswerProgress();
 }
 
 function restoreAnswers() {
@@ -582,6 +676,7 @@ function render(grouped) {
 
   // 绑定交互
   bindQuestionInteractions(output);
+  updateAnswerProgress();
 }
 
 function showLoading() {
@@ -892,6 +987,7 @@ async function doAnalyze(text) {
     localStorage.removeItem(STORAGE_KEYS.ANSWERS);
     clearSession();
     saveToHistory(text, grouped);
+    collapseInputSection();
   } catch (error) {
     console.error("Analysis failed:", error);
     outputSection.classList.remove("hidden");
@@ -1256,6 +1352,14 @@ generateFinalPrdBtn.addEventListener("click", async () => {
     prdExtraActions.classList.remove("hidden");
     updateStepIndicator("artifacts");
     saveSession();
+
+    // 滚动到 PRD 顶部并短暂高亮
+    const prdCard = prdSection.querySelector(".prd-card");
+    if (prdCard) {
+      prdCard.scrollIntoView({ behavior: "smooth", block: "start" });
+      prdCard.classList.add("prd-updated");
+      setTimeout(() => prdCard.classList.remove("prd-updated"), 1600);
+    }
   } catch (error) {
     console.error("Final PRD generation failed:", error);
     reviewSection.classList.remove("hidden");
@@ -1331,6 +1435,7 @@ function doNewSession() {
 
   templateSelect.value = "general";
   prdSection.querySelector(".output-header h2").textContent = "PRD 文档预览";
+  expandInputSection();
   updateStepIndicator("input");
 
   textarea.focus();
@@ -1440,6 +1545,7 @@ function loadHistoryItem(index) {
   render(lastResult);
   closeModal(historyModal);
   updateStepIndicator("clarify");
+  collapseInputSection();
 }
 
 historyBtn.addEventListener("click", () => {
@@ -1989,6 +2095,7 @@ exportHtmlBtn.addEventListener("click", () => {
     outputSection.classList.remove("hidden");
     render(lastResult);
     updateStepIndicator("clarify");
+    collapseInputSection();
   } catch (_) {
     updateStepIndicator("input");
     return;

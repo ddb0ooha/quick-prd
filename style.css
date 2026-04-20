@@ -356,18 +356,46 @@ body {
 }
 
 /* 已完成步骤 */
+.step.completed {
+  cursor: pointer;
+}
+
+.step.completed:hover {
+  background: var(--color-success-light);
+}
+
 .step.completed .step-number {
   background: var(--color-success-light);
-  color: var(--color-success);
-  font-size: 11px;
+  color: transparent;
+  font-size: 0;
+  position: relative;
 }
 
 .step.completed .step-number::before {
   content: "✓";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--color-success);
+}
+
+.step.completed:hover .step-number {
+  background: var(--color-success);
+}
+
+.step.completed:hover .step-number::before {
+  color: #fff;
 }
 
 .step.completed .step-label {
   color: var(--color-text-secondary);
+}
+
+.step.completed:hover .step-label {
+  color: var(--color-success-active);
 }
 
 /* 当前步骤 */
@@ -647,6 +675,26 @@ button {
 .btn-ghost:hover {
   background: var(--color-bg-hover);
   color: var(--color-text-primary);
+}
+
+/* 答题进度指示器 */
+.answer-progress {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: var(--space-2) 0 var(--space-1);
+  transition: color var(--transition-fast);
+}
+
+.answer-progress--complete {
+  color: var(--color-success);
+  font-weight: 500;
+}
+
+/* followup-btn 作为辅助动作居中显示 */
+#followup-btn {
+  display: block;
+  margin: var(--space-2) auto var(--space-1);
 }
 
 /* 小尺寸变体 */
@@ -952,6 +1000,43 @@ button {
 
 .input-section {
   margin-bottom: var(--space-6);
+}
+
+/* 需求输入折叠摘要条 */
+.input-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-1);
+  min-height: 44px;
+}
+
+.input-summary-text {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.input-summary-text .summary-preview {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.input-summary-tag {
+  flex-shrink: 0;
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border-radius: var(--radius-full);
+  padding: 2px 8px;
 }
 
 .input-toolbar {
@@ -1381,6 +1466,16 @@ select:focus,
   100% { opacity: 0; }
 }
 
+@keyframes prd-update-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(43, 108, 176, 0.35); }
+  50%  { box-shadow: 0 0 0 6px rgba(43, 108, 176, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(43, 108, 176, 0); }
+}
+
+.prd-card.prd-updated {
+  animation: prd-update-pulse 1.6s ease-out;
+}
+
 /* ========== PRD 区域 ========== */
 
 .prd-section {
@@ -1628,14 +1723,100 @@ select:focus,
   margin-bottom: var(--space-2);
 }
 
-/* ========== 产出物按钮组 ========== */
+/* ========== 产出物触发区（Step 5 卡片化布局） ========== */
+
+@keyframes section-slide-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
 .prd-extra-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
   padding: var(--space-5) 0 var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.prd-extra-actions:not(.hidden) {
+  animation: section-slide-in 0.35s ease-out;
+}
+
+.artifact-triggers {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+}
+
+.artifact-trigger-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-card);
+  transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
+}
+
+.artifact-trigger-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.artifact-trigger-icon {
+  font-size: 20px;
+  line-height: 1;
+  width: 36px;
+  height: 36px;
+  display: flex;
   align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+}
+
+.artifact-trigger-card--flowchart .artifact-trigger-icon {
+  background: var(--color-flowchart-light);
+  color: var(--color-flowchart);
+}
+
+.artifact-trigger-card--wireframe .artifact-trigger-icon {
+  background: var(--color-wireframe-light);
+  color: var(--color-wireframe);
+}
+
+.artifact-trigger-card--sequence .artifact-trigger-icon {
+  background: var(--color-sequence-light);
+  color: var(--color-sequence);
+}
+
+.artifact-trigger-body {
+  flex: 1;
+}
+
+.artifact-trigger-title {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-1);
+}
+
+.artifact-trigger-desc {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.artifact-trigger-btn {
+  align-self: flex-end;
+  margin-top: auto;
+  padding: 5px 14px;
+  font-size: var(--font-size-sm);
+}
+
+/* Export 按钮对齐右侧 */
+#export-all-btn.export-all-btn {
+  align-self: flex-end;
 }
 
 /* ========== 流程图 / 页面结构 / 时序图 ========== */
@@ -2302,6 +2483,10 @@ button:focus-visible {
 
   .prd-extra-actions {
     gap: var(--space-2);
+  }
+
+  .artifact-triggers {
+    grid-template-columns: 1fr;
   }
 
   .modal {

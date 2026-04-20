@@ -91,40 +91,48 @@
         <!-- Step 1：需求输入 -->
         <section class="card input-section">
           <div class="section-top-bar section-top-bar--primary"></div>
-          <div class="section-header">
-            <div class="section-header-left">
-              <h2 class="section-title">描述你的产品需求</h2>
-              <p class="section-desc">越具体越好，AI 会帮你提炼关键信息</p>
-            </div>
+          <!-- 折叠后的摘要条 -->
+          <div id="input-summary" class="input-summary hidden">
+            <p id="input-summary-text" class="input-summary-text"></p>
+            <button type="button" id="input-expand-btn" class="btn btn-ghost btn-sm">重新编辑</button>
           </div>
-          <div class="input-toolbar">
-            <div class="examples">
-              <span class="examples-label">没有灵感？试试这些示例：</span>
-              <button type="button" class="example-btn" data-example="搜索功能" title="点击填入示例需求，可直接体验完整流程">搜索功能</button>
-              <button type="button" class="example-btn" data-example="消息通知中心" title="点击填入示例需求，可直接体验完整流程">消息通知中心</button>
-              <button type="button" class="example-btn" data-example="角色权限管理" title="点击填入示例需求，可直接体验完整流程">角色权限管理</button>
+          <!-- 完整输入区 -->
+          <div id="input-full-content">
+            <div class="section-header">
+              <div class="section-header-left">
+                <h2 class="section-title">描述你的产品需求</h2>
+                <p class="section-desc">越具体越好，AI 会帮你提炼关键信息</p>
+              </div>
             </div>
-            <div class="template-selector">
-              <label class="template-label" for="template-select">需求类型：</label>
-              <select id="template-select" class="template-select" title="选择后将影响澄清问题、PRD 生成和评审的分析逻辑，切换后需重新生成才生效">
-                <option value="general">通用需求</option>
-                <option value="marketing">营销活动</option>
-                <option value="ecommerce">电商交易</option>
-                <option value="admin">后台管理</option>
-              </select>
+            <div class="input-toolbar">
+              <div class="examples">
+                <span class="examples-label">没有灵感？试试这些示例：</span>
+                <button type="button" class="example-btn" data-example="搜索功能" title="点击填入示例需求，可直接体验完整流程">搜索功能</button>
+                <button type="button" class="example-btn" data-example="消息通知中心" title="点击填入示例需求，可直接体验完整流程">消息通知中心</button>
+                <button type="button" class="example-btn" data-example="角色权限管理" title="点击填入示例需求，可直接体验完整流程">角色权限管理</button>
+              </div>
+              <div class="template-selector">
+                <label class="template-label" for="template-select">需求类型：</label>
+                <select id="template-select" class="template-select" title="选择后将影响澄清问题、PRD 生成和评审的分析逻辑，切换后需重新生成才生效">
+                  <option value="general">通用需求</option>
+                  <option value="marketing">营销活动</option>
+                  <option value="ecommerce">电商交易</option>
+                  <option value="admin">后台管理</option>
+                </select>
+              </div>
             </div>
+            <textarea
+              id="requirement"
+              class="input-base requirement-textarea"
+              placeholder="例如：我想做一个电商网站，用户可以买东西……&#10;&#10;按 Ctrl+Enter 快速提交"
+              rows="6"
+            ></textarea>
+            <div id="api-key-banner" class="api-key-banner hidden">
+              <span>还没有设置 API Key，完成设置后才能生成内容。</span>
+              <button type="button" id="api-key-banner-btn" class="api-key-banner-link">立即设置 →</button>
+            </div>
+            <button id="generate-btn" class="btn btn-primary btn-block">生成澄清问题</button>
           </div>
-          <textarea
-            id="requirement"
-            class="input-base requirement-textarea"
-            placeholder="例如：我想做一个电商网站，用户可以买东西……&#10;&#10;按 Ctrl+Enter 快速提交"
-            rows="6"
-          ></textarea>
-          <div id="api-key-banner" class="api-key-banner hidden">
-            <span>还没有设置 API Key，完成设置后才能生成内容。</span>
-            <button type="button" id="api-key-banner-btn" class="api-key-banner-link">立即设置 →</button>
-          </div>
-          <button id="generate-btn" class="btn btn-primary btn-block">生成澄清问题</button>
         </section>
 
         <!-- Step 2：需求澄清 -->
@@ -143,7 +151,8 @@
               <p>AI 正在分析需求，请稍候…</p>
             </div>
             <div id="output" aria-live="polite"></div>
-            <button id="followup-btn" class="btn btn-secondary btn-block hidden">继续追问（最多 3 题）</button>
+            <div id="answer-progress" class="answer-progress hidden"></div>
+            <button id="followup-btn" class="btn btn-ghost hidden">继续追问（最多 3 题）</button>
             <button id="generate-prd-btn" class="btn btn-success btn-block hidden">生成 PRD 文档</button>
             <button id="back-to-final-prd-btn" class="btn btn-primary btn-block hidden">查看最终 PRD 文档</button>
           </div>
@@ -172,11 +181,34 @@
             <div id="prd-content" class="prd-content" aria-live="polite"></div>
           </div>
 
-          <!-- 产出物按钮组 -->
+          <!-- 产出物触发区（Step 5 卡片化布局） -->
           <div class="prd-extra-actions hidden" id="prd-extra-actions">
-            <button id="generate-flowchart-btn" class="flowchart-btn" title="需先完成评审并生成最终版 PRD">生成业务流程图</button>
-            <button id="generate-wireframe-btn" class="wireframe-btn" title="需先完成评审并生成最终版 PRD">生成页面结构说明</button>
-            <button id="generate-sequence-btn" class="sequence-btn" title="需先完成评审并生成最终版 PRD">生成时序图</button>
+            <div class="artifact-triggers">
+              <div class="artifact-trigger-card artifact-trigger-card--flowchart">
+                <div class="artifact-trigger-icon">↻</div>
+                <div class="artifact-trigger-body">
+                  <h3 class="artifact-trigger-title">业务流程图</h3>
+                  <p class="artifact-trigger-desc">识别关键业务节点，生成可交付的 Mermaid 流程图</p>
+                </div>
+                <button id="generate-flowchart-btn" class="artifact-trigger-btn flowchart-btn" title="需先完成评审并生成最终版 PRD">生成</button>
+              </div>
+              <div class="artifact-trigger-card artifact-trigger-card--wireframe">
+                <div class="artifact-trigger-icon">⊞</div>
+                <div class="artifact-trigger-body">
+                  <h3 class="artifact-trigger-title">页面结构说明</h3>
+                  <p class="artifact-trigger-desc">输出低保真布局和组件清单，辅助 UI 设计</p>
+                </div>
+                <button id="generate-wireframe-btn" class="artifact-trigger-btn wireframe-btn" title="需先完成评审并生成最终版 PRD">生成</button>
+              </div>
+              <div class="artifact-trigger-card artifact-trigger-card--sequence">
+                <div class="artifact-trigger-icon">⇄</div>
+                <div class="artifact-trigger-body">
+                  <h3 class="artifact-trigger-title">时序图</h3>
+                  <p class="artifact-trigger-desc">分析系统间交互，生成 Mermaid 时序图</p>
+                </div>
+                <button id="generate-sequence-btn" class="artifact-trigger-btn sequence-btn" title="需先完成评审并生成最终版 PRD">生成</button>
+              </div>
+            </div>
             <button id="export-all-btn" class="export-all-btn">导出全套文档</button>
           </div>
 
