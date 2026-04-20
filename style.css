@@ -1000,6 +1000,7 @@ button {
 
 .input-section {
   margin-bottom: var(--space-6);
+  scroll-margin-top: 80px;
 }
 
 /* 需求输入折叠摘要条 */
@@ -1228,6 +1229,7 @@ select:focus,
 
 .output-section {
   margin-bottom: var(--space-6);
+  scroll-margin-top: 80px;
 }
 
 /* ========== 问题选项 Chip ========== */
@@ -1290,6 +1292,13 @@ select:focus,
 .option-other-input {
   margin-top: var(--space-2);
   width: 100%;
+}
+
+.answer-preview {
+  margin-top: var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: var(--line-height-normal);
 }
 
 /* 深色模式适配 */
@@ -1482,6 +1491,7 @@ select:focus,
   display: flex;
   flex-direction: column;
   gap: 0;
+  scroll-margin-top: 80px;
 }
 
 .prd-card,
@@ -1876,6 +1886,36 @@ select:focus,
 }
 
 /* ========== 加载状态 ========== */
+
+.analyze-progress-wrap {
+  padding: var(--space-2) 0 var(--space-4);
+}
+
+.analyze-progress-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-2);
+}
+
+.analyze-progress-track {
+  width: 100%;
+  height: 6px;
+  background: var(--color-border);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.analyze-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--color-primary);
+  border-radius: var(--radius-full);
+  transition: width 0.3s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .analyze-progress-fill { transition: none; }
+}
 
 .loading {
   display: flex;

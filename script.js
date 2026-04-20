@@ -575,8 +575,10 @@ function renderQuestionItem(q, id, groupName) {
         ${options.map(opt => `<label class="option-chip"><input type="checkbox" value="${escapeHTML(opt)}"><span>${escapeHTML(opt)}</span></label>`).join("")}
         <button type="button" class="option-other-toggle">✏ 其他</button>
       </div>
-      <textarea class="option-other-input input-base hidden" placeholder="手动补充（可留空）" rows="1"></textarea>`
-    : `<textarea class="option-other-input input-base" placeholder="填写补充信息（可留空）" rows="1"></textarea>`;
+      <textarea class="option-other-input input-base hidden" placeholder="手动补充（可留空）" rows="1"></textarea>
+      <p class="answer-preview hidden"></p>`
+    : `<textarea class="option-other-input input-base" placeholder="填写补充信息（可留空）" rows="1"></textarea>
+      <p class="answer-preview hidden"></p>`;
 
   return `<li>
     <span class="question-text">${safeQ}</span>
@@ -595,6 +597,8 @@ function bindQuestionInteractions(container) {
     const otherToggle = li.querySelector(".option-other-toggle");
     const otherTextarea = li.querySelector(".option-other-input");
 
+    const preview = li.querySelector(".answer-preview");
+
     function composeAndSave() {
       const selected = [...li.querySelectorAll(".option-chip.selected")]
         .map((chip) => chip.querySelector("input").value);
@@ -602,11 +606,20 @@ function bindQuestionInteractions(container) {
       let answer = selected.join("、");
       if (manual) answer = answer ? `${answer}；其他：${manual}` : manual;
       hiddenInput.value = answer;
+      if (preview) {
+        if (answer) {
+          preview.textContent = `当前答案：${answer}`;
+          preview.classList.remove("hidden");
+        } else {
+          preview.classList.add("hidden");
+        }
+      }
       saveAnswers();
     }
 
     chips.forEach((chip) => {
-      chip.addEventListener("click", () => {
+      chip.addEventListener("click", (e) => {
+        e.preventDefault(); // prevent label from firing a second synthetic click on the contained input
         chip.classList.toggle("selected");
         chip.querySelector("input").checked = chip.classList.contains("selected");
         composeAndSave();
@@ -681,6 +694,12 @@ function render(grouped) {
 
 function showLoading() {
   loading.innerHTML = `
+    <div class="analyze-progress-wrap">
+      <p class="analyze-progress-label" id="analyze-loading-label">AI 正在分析需求，请稍候…</p>
+      <div class="analyze-progress-track">
+        <div class="analyze-progress-fill" id="analyze-progress-fill"></div>
+      </div>
+    </div>
     <div class="skeleton-block">
       <div class="skeleton-line"></div>
       <div class="skeleton-line"></div>
@@ -700,22 +719,37 @@ function hideLoading() {
 }
 
 function showError(error, container) {
-  let msg = "分析失败，请稍后重试。";
-  if (error.message === "API_KEY_MISSING") {
-    msg = '请先设置 API Key。点击右上角 ⚙️ 按钮进行设置。';
-  } else if (error.message === "API_KEY_INVALID") {
-    msg = "API Key 无效，请点击右上角 ⚙️ 检查后重新设置。";
-  } else if (error.message === "RATE_LIMITED") {
-    msg = "请求过于频繁，请稍后再试。";
-  } else if (error.message) {
-    msg = error.message;
+  const raw = error.message || "";
+
+  // User operation errors and retryable errors → toast only, never clear container
+  if (raw === "API_KEY_MISSING") {
+    showToast("请先设置 API Key，点击右上角 ⚙️ 按钮进行设置。", "error", 5000);
+    return;
   }
-  const div = document.createElement("div");
-  div.className = "error-msg";
-  div.textContent = msg;
-  const target = container || output;
-  target.innerHTML = "";
-  target.appendChild(div);
+  if (raw === "API_KEY_INVALID") {
+    showToast("API Key 无效，请点击右上角 ⚙️ 检查后重新设置。", "error", 5000);
+    return;
+  }
+  if (raw === "RATE_LIMITED") {
+    showToast("请求过于频繁，请稍后再试。", "warning", 5000);
+    return;
+  }
+  if (raw.includes("超时") || raw.includes("网络请求失败")) {
+    showToast(raw, "warning", 5000);
+    return;
+  }
+
+  // Data / unknown errors → inline error card in container (container was in loading state)
+  const msg = raw || "操作失败，请稍后重试。";
+  if (container) {
+    const div = document.createElement("div");
+    div.className = "error-msg";
+    div.textContent = msg;
+    container.innerHTML = "";
+    container.appendChild(div);
+  } else {
+    showToast(msg, "error", 5000);
+  }
 }
 
 // ========== 收集问答对 ==========
@@ -971,15 +1005,19 @@ async function doAnalyze(text) {
     showStreamingBar();
     setBtnGenerating(generateBtn, "分析中…");
 
-    const loadingText = loading.querySelector("p");
     const rawJson = await analyzeWithAI(text, (charCount) => {
-      loadingText.textContent = `AI 正在分析需求，已接收 ${charCount} 字…`;
+      const label = document.getElementById("analyze-loading-label");
+      const fill  = document.getElementById("analyze-progress-fill");
+      if (label) label.textContent = `AI 正在分析需求，已接收 ${charCount} 字…`;
+      if (fill)  fill.style.width  = Math.min(90, Math.round(charCount / 40)) + "%";
     }, currentTemplate);
     const grouped = parseAIResponse(rawJson);
 
     lastResult = grouped;
     lastInput = text;
 
+    const fill = document.getElementById("analyze-progress-fill");
+    if (fill) fill.style.width = "100%";
     render(grouped);
 
     safeSetItem(STORAGE_KEYS.INPUT, text);
@@ -1124,7 +1162,7 @@ followupBtn.addEventListener("click", async () => {
     followupBtn.classList.add("hidden");
     showToast("追加问题已生成，填写后可继续生成 PRD", "success", 3000);
   } catch (error) {
-    showError(error, output);
+    showError(error);
   } finally {
     isGenerating = false;
     hideStreamingBar();
@@ -1363,7 +1401,7 @@ generateFinalPrdBtn.addEventListener("click", async () => {
   } catch (error) {
     console.error("Final PRD generation failed:", error);
     reviewSection.classList.remove("hidden");
-    showError(error, prdContent);
+    showError(error);
   } finally {
     isGenerating = false;
     hideStreamingBar();
