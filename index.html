@@ -12,8 +12,10 @@
 <body>
   <div class="app-wrapper">
 
+    <div class="app-topbar">
     <!-- ===== 顶部导航栏 ===== -->
     <header class="app-header">
+      <div class="app-header-inner">
       <div class="app-header-left">
         <svg class="app-logo-icon" width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
           <rect x="2" y="2" width="18" height="18" rx="4" fill="var(--color-primary)" opacity="0.15"/>
@@ -45,48 +47,42 @@
           <span>设置</span>
         </button>
       </div>
+      </div>
     </header>
 
-    <!-- ===== 主体：侧栏 + 内容区 ===== -->
-    <div class="app-body">
-
-      <!-- 左侧步骤导航 -->
-      <aside class="app-sidebar">
-        <div class="sidebar-section-label">工作流</div>
-        <nav class="step-indicator" id="step-indicator" aria-label="工作流进度">
-          <div class="step active" data-step="input">
-            <span class="step-number">1</span>
-            <span class="step-label">需求输入</span>
-          </div>
-          <div class="step-connector"></div>
-          <div class="step" data-step="clarify">
-            <span class="step-number">2</span>
-            <span class="step-label">需求澄清</span>
-          </div>
-          <div class="step-connector"></div>
-          <div class="step" data-step="prd">
-            <span class="step-number">3</span>
-            <span class="step-label">PRD 生成</span>
-          </div>
-          <div class="step-connector"></div>
-          <div class="step" data-step="review">
-            <span class="step-number">4</span>
-            <span class="step-label">评审优化</span>
-          </div>
-          <div class="step-connector"></div>
-          <div class="step" data-step="artifacts">
-            <span class="step-number">5</span>
-            <span class="step-label">产出物</span>
-          </div>
-        </nav>
-
-        <div class="sidebar-footer">
-          <p class="sidebar-tagline">从模糊需求<br>到可评审 PRD</p>
+    <!-- ===== 工作流进度条 ===== -->
+    <div class="app-progress">
+      <nav class="step-indicator" id="step-indicator" aria-label="工作流进度">
+        <div class="step active" data-step="input">
+          <span class="step-number">1</span>
+          <span class="step-label">需求输入</span>
         </div>
-      </aside>
+        <div class="step-connector"></div>
+        <div class="step" data-step="clarify">
+          <span class="step-number">2</span>
+          <span class="step-label">需求澄清</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step" data-step="prd">
+          <span class="step-number">3</span>
+          <span class="step-label">PRD 生成</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step" data-step="review">
+          <span class="step-number">4</span>
+          <span class="step-label">评审优化</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step" data-step="artifacts">
+          <span class="step-number">5</span>
+          <span class="step-label">产出物</span>
+        </div>
+      </nav>
+    </div>
+    </div>
 
-      <!-- 右侧主内容区 -->
-      <main class="app-main">
+    <!-- ===== 主内容区 ===== -->
+    <main class="app-main">
 
         <!-- Step 1：需求输入 -->
         <section class="card input-section">
@@ -293,8 +289,7 @@
 
         </section>
 
-      </main>
-    </div>
+    </main>
   </div>
 
   <!-- ===== 历史记录弹窗 ===== -->
